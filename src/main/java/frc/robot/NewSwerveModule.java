@@ -4,10 +4,13 @@ import frc.robot.Utility.ActuatorInterlocks;
 import frc.robot.Utility.ClassHelpers.Timer;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
+import com.ctre.phoenix6.controls.PositionDutyCycle;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.revrobotics.CANSparkLowLevel.MotorType;
+import com.revrobotics.CANSparkBase;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.SparkAbsoluteEncoder;
+import com.revrobotics.SparkPIDController;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
@@ -29,6 +32,7 @@ public class NewSwerveModule {
     private final TalonFX azimuthTalon;
     private CANSparkMax azimuthSpark;
     private SparkAbsoluteEncoder azimuthEncoder;
+    private SparkPIDController azimuthPidController;
     private final DoubleSolenoid shifter;
 
     private boolean azimuthSparkActive;
@@ -65,6 +69,8 @@ public class NewSwerveModule {
             this.azimuthTalon.get();
         } catch (Throwable err) {
             this.azimuthSpark = new CANSparkMax(20 + moduleNumber, MotorType.kBrushless);
+            this.azimuthSpark.restoreFactoryDefaults();
+            azimuthPidController = azimuthSpark.getPIDController();
             this.azimuthEncoder = azimuthSpark.getAbsoluteEncoder();
             azimuthSparkActive = true;
         }
@@ -152,11 +158,17 @@ public class NewSwerveModule {
         }
 
 
-        // TEMPTEMPTEMPTEMP
-        @SuppressWarnings("unused")
-        double azimuthOutput = ActuatorInterlocks.TAI_Motors("Azimuth_" + ((Integer)moduleNumber).toString() + "_(p)", moduleState.angle.getDegrees());
-        @SuppressWarnings("unused")
+        double azimuthOutput = ActuatorInterlocks.TAI_Motors("Azimuth_" + ((Integer)moduleNumber).toString() + "_(p)", moduleState.angle.getRotations() * azimuthRatio);
         double driveOutput = ActuatorInterlocks.TAI_Motors("Drive_" + ((Integer)moduleNumber).toString() + "_(p)", moduleState.speedMetersPerSecond);
+
+        if (azimuthSparkActive) {
+            azimuthPidController.setReference(azimuthOutput, CANSparkBase.ControlType.kPosition);
+        } else {
+            PositionDutyCycle controlRequest = new PositionDutyCycle(azimuthOutput);
+            azimuthTalon.setControl(controlRequest);
+        }
+
+        drive.set(driveOutput);
     }
 
 
