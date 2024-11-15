@@ -1,15 +1,17 @@
 package frc.robot.Utility;
 
 public class Control {
-    public static double coerce(double input, double min, double max) {
-        double output;
-        if (input < min) {
-            output = min;
-        } else if (input > max) {
-            output = max;
-        } else {
-            output = input;
-        }
-        return output;
+
+
+    
+    /**
+     * Forces a value between a minimum and a maximum such that min <= input <= max
+     * @param input the value to restrict
+     * @param min the lower bound
+     * @param max the upper bound
+     * @return The input restricted between the min and max
+     */
+    public static double clamp(double input, double min, double max) {
+        return Math.max(min, Math.min(max, input));
     }
 }

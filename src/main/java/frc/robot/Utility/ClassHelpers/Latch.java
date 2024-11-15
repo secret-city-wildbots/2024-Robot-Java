@@ -4,6 +4,12 @@ public class Latch {
     boolean defaultBool;
     boolean latchedBool;
 
+
+
+    /**
+     * Constantly updates a boolean value and stores it upon recieving a latch signal and stops storing it upon recieving a reset signal
+     * @param defaultValue True or False
+     */
     public Latch(boolean defaultValue) {
         this.defaultBool = defaultValue;
         latchedBool = defaultValue;
@@ -17,6 +23,10 @@ public class Latch {
     double defaultDbl;
     double latchedDbl;
 
+    /**
+     * Constantly updates a double value and stores it upon recieving a latch signal and stops storing it upon recieving a reset signal
+     * @param defaultValue Double
+     */
     public Latch(double defaultValue) {
         this.defaultDbl = defaultValue;
         latchedDbl = defaultValue;

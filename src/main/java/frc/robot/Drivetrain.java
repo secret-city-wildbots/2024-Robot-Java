@@ -254,7 +254,7 @@ public class Drivetrain {
             * SwerveUtils.readDriverProfiles(currentProfile).rotateMax * joystickRotation;
         driverHeadingFudge0 += driverHeadingFudge;
       }
-      driverHeadingFudge0 = Control.coerce(driverHeadingFudge0, headingFudgeMax, -1 * headingFudgeMax);
+      driverHeadingFudge0 = Control.clamp(driverHeadingFudge0, headingFudgeMax, -1 * headingFudgeMax);
       lockHeading0 = true;
       double assistedRotation = headingAnglePID.calculate(pigeonAngle, lockedHeading + driverHeadingFudge0);
       rotationInDeadband = Math.abs(assistedRotation) < 0.02;
