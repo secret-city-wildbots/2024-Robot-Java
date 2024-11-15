@@ -6,7 +6,6 @@ import frc.robot.Utility.ClassHelpers.Timer;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.revrobotics.CANSparkLowLevel.MotorType;
-import com.revrobotics.CANSparkBase;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.SparkAbsoluteEncoder;
 
@@ -15,7 +14,6 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
-import edu.wpi.first.wpilibj.Solenoid;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 
 public class NewSwerveModule {
@@ -153,7 +151,11 @@ public class NewSwerveModule {
             shifter.set(Value.kReverse);
         }
 
+
+        // TEMPTEMPTEMPTEMP
+        @SuppressWarnings("unused")
         double azimuthOutput = ActuatorInterlocks.TAI_Motors("Azimuth_" + ((Integer)moduleNumber).toString() + "_(p)", moduleState.angle.getDegrees());
+        @SuppressWarnings("unused")
         double driveOutput = ActuatorInterlocks.TAI_Motors("Drive_" + ((Integer)moduleNumber).toString() + "_(p)", moduleState.speedMetersPerSecond);
     }
 
