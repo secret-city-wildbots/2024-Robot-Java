@@ -89,7 +89,7 @@ public class Elevator {
                     .withPosition(elevatorOutput * elevatorRatio)
                     .withFeedForward(elevatorFeedForward));
         } else {
-            elevator.set(ActuatorInterlocks.TAI_Motors("Elevator_(p)", 0.0));
+            ActuatorInterlocks.TAI_TalonFX_Power(elevator, "Elevator_(p)", 0.0);
         }
     }
 }

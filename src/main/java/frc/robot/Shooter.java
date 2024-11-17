@@ -2,6 +2,7 @@ package frc.robot;
 
 import frc.robot.Utility.*;
 
+import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.TalonFX;
 // import com.ctre.phoenix6.signals.ForwardLimitValue;
@@ -45,6 +46,7 @@ public class Shooter {
     private final TalonFX left = new TalonFX(16, "rio");
 
     private TalonFXConfiguration wristConfig = new TalonFXConfiguration();
+    private Slot0Configs wristPIDConfigs = new Slot0Configs();
     private TalonFXConfiguration rightConfig = new TalonFXConfiguration();
     private TalonFXConfiguration leftConfig = new TalonFXConfiguration();
 
@@ -65,7 +67,11 @@ public class Shooter {
 
         wristConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         wristConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        wristPIDConfigs.kP = wristController.getP();
+        wristPIDConfigs.kI = wristController.getI();
+        wristPIDConfigs.kD = wristController.getD();
         wrist.getConfigurator().apply(wristConfig);
+        wrist.getConfigurator().apply(wristPIDConfigs);
 
         rightConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         rightConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
@@ -149,36 +155,12 @@ public class Shooter {
     }
 
     private double calculateWristAngle(Pose2d robotPosition) {
-        return interpolateWristAngle(robotPosition.getY(), wristCalibrations);
-    }
-
-    private double interpolateWristAngle(double value, double[][] array) {
-        double[] col1 = ArrayHelpers.getColumn(array, 0);
-        double[] col2 = ArrayHelpers.getColumn(array, 1);
-        int length = col1.length - 1;
-        if (col1.length < 2) {
-            if (value < col1[0]) {
-                return col2[0] - (((col2[1] - col2[0]) / (col1[1] - col1[0])) * (col1[0] - value));
-            } else {
-                for (int i = 1; i < col1.length; i++) {
-                    if (value < col1[i]) {
-                        return col2[i - 1] + (((col2[i] - col2[i - 1]) / (col1[i] - col1[i - 1])) * (col1[i] - value));
-                    }
-                }
-                return col2[length] + (((col2[length] - col2[length - 1]) / (col1[length] - col1[length - 1]))
-                        * (value - col1[length]));
-            }
-        } else {
-            return 0;
-        }
+        return Control.interpolateCSV(robotPosition.getY(), wristCalibrations);
     }
 
     public void updateOutputs() {
-        // System.out.println(wrist.getRotorPosition().getValueAsDouble()*360/wristRatio);
-        // System.out.println(wristOutput);
-        right.set(ActuatorInterlocks.TAI_Motors("Shooter_Right_(p)", (spin) ? shooterPower : 0));
-        left.set(ActuatorInterlocks.TAI_Motors("Shooter_Left_(p)", (spin) ? shooterPower * shooterRatio : 0));
-        wrist.set(ActuatorInterlocks.TAI_Motors("Wrist_(p)", wristFeedForward + wristController
-                .calculate(wrist.getRotorPosition().getValueAsDouble() * 360 / wristRatio, wristOutput)));
+        ActuatorInterlocks.TAI_TalonFX_Power(right, "Shooter_Right_(p)", (spin) ? shooterPower : 0);
+        ActuatorInterlocks.TAI_TalonFX_Power(left, "Shooter_Left_(p)", (spin) ? shooterPower * shooterRatio : 0);
+        ActuatorInterlocks.TAI_TalonFX_Position(wrist, "Wrist_(p)", wristOutput / 360);
     }
 }

@@ -1,5 +1,13 @@
 package frc.robot.Utility;
 
+import com.ctre.phoenix6.controls.PositionDutyCycle;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.revrobotics.CANSparkBase;
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.SparkPIDController;
+
+import edu.wpi.first.wpilibj.DoubleSolenoid;
+import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import frc.robot.Dashboard;
 
 public class ActuatorInterlocks {
@@ -23,22 +31,22 @@ public class ActuatorInterlocks {
     /**
      * Actuator testing:
      * <ul>   
-     * <li> If the Dashboard is not testing anything, return normal output
+     * <li> If the Dashboard is not testing anything, set normal output as a DutyCycleOut command
      * <li> If the Dashboard is testing this actuator:
      *  <ul>
-     *  <li> Return the amplitude from the Dashboard as a power output if no period is present
-     *  <li> Return a time based sinusoid with amplitude from the Dashboard as a power output if a period is given
+     *  <li> Output the amplitude from the Dashboard as a DutyCycleOut command
+     *  <li> Output a time based sinusoid with amplitude from the Dashboard as a DutyCycleOut command is period is given
      *  </ul>
-     * <li> If the Dashboard is testing a different actuator, return 0
+     * <li> If the Dashboard is testing a different actuator, set DutyCycleOut command of 0
      * </ul>
      * 
-     * This returns a double output for motor testing
+     * This sets DutyCycleOut commands for TalonFX motors in actuator testing
      *      
+     * @param motor The TalonFX motor object to output to
      * @param actuatorName The name of the actuator matching the list in Robot.java
-     * @param normalOutput The output that would go to the motor while not in testing mode
-     * @return A motor output to implement actuator testing
+     * @param normalOutput The output between -1 and 1 that would go to the motor while not in testing mode
      */
-    public static double TAI_Motors(String actuatorName, double normalOutput){
+    public static void TAI_TalonFX_Power(TalonFX motor, String actuatorName, double normalOutput){
         // Get Dashboard testing values
         testingActuator = Dashboard.testActuatorName.get();
         testingPeriod = Dashboard.testActuatorPeriod.get();
@@ -46,17 +54,17 @@ public class ActuatorInterlocks {
 
         //If nothing is being tested, return the normal output. Otherwise, uses dashboard amplitude as double output or periodic sine output
         if (testingActuator.equals("No_Test")) {
-            return normalOutput;
+            motor.set(normalOutput);
         }
         else if (testingActuator.equals(actuatorName)) {
             if (testingPeriod == 0){
-                return testingValue;
+                motor.set(testingValue);
             } else {
-                return testingValue * Math.sin((double)System.currentTimeMillis() * 0.001 * Math.PI / testingPeriod);
+                motor.set(testingValue * Math.sin((double)System.currentTimeMillis() * 0.001 * Math.PI / testingPeriod));
             }
         }
         else {
-            return 0;
+            motor.set(0);
         }
     }
 
@@ -65,35 +73,163 @@ public class ActuatorInterlocks {
     /**
      * Actuator testing:
      * <ul>   
-     * <li> If the Dashboard is not testing anything, return normal output
-     * <li> If the Dashboard is testing this actuator, return true or false if the Dashboard amplitude is 0 or 1 respectively
-     * <li> If the Dashboard is testing a different actuator, return 0
+     * <li> If the Dashboard is not testing anything, set normal output as a PositionDutyCycle command
+     * <li> If the Dashboard is testing this actuator:
+     *  <ul>
+     *  <li> Output the amplitude from the Dashboard as a DutyCycleOut command
+     *  <li> Output a time based sinusoid with amplitude from the Dashboard as a DutyCycleOut command is period is given
+     *  </ul>
+     * <li> If the Dashboard is testing a different actuator, set DutyCycleOut command of 0
+     * </ul>
+     * 
+     * This sets DutyCycleOut commands for TalonFX motors in actuator testing
+     *      
+     * @param motor The TalonFX motor object to output to
+     * @param actuatorName The name of the actuator matching the list in Robot.java
+     * @param normalOutput The output in rotations that would go to the motor while not in testing mode
+     */
+    public static void TAI_TalonFX_Position(TalonFX motor, String actuatorName, double normalOutput){
+        // Get Dashboard testing values
+        testingActuator = Dashboard.testActuatorName.get();
+        testingPeriod = Dashboard.testActuatorPeriod.get();
+        testingValue = Dashboard.testActuatorValue.get();
+
+        //If nothing is being tested, return the normal output. Otherwise, uses dashboard amplitude as double output or periodic sine output
+        if (testingActuator.equals("No_Test")) {
+            PositionDutyCycle controlRequest = new PositionDutyCycle(normalOutput);
+            motor.setControl(controlRequest);
+        }
+        else if (testingActuator.equals(actuatorName)) {
+            if (testingPeriod == 0){
+                motor.set(testingValue);
+            } else {
+                motor.set(testingValue * Math.sin((double)System.currentTimeMillis() * 0.001 * Math.PI / testingPeriod));
+            }
+        }
+        else {
+            motor.set(0);
+        }
+    } 
+    
+    
+
+    /**
+     * Actuator testing:
+     * <ul>   
+     * <li> If the Dashboard is not testing anything, set normal output as a power command
+     * <li> If the Dashboard is testing this actuator:
+     *  <ul>
+     *  <li> Output the amplitude from the Dashboard as a power command
+     *  <li> Output a time based sinusoid with amplitude from the Dashboard as a power command is period is given
+     *  </ul>
+     * <li> If the Dashboard is testing a different actuator, set power command of 0
+     * </ul>
+     * 
+     * This sets power commands for SparkMAX motors in actuator testing
+     *      
+     * @param motor The SparkMAX motor object to output to
+     * @param actuatorName The name of the actuator matching the list in Robot.java
+     * @param normalOutput The output between -1 and 1 that would go to the motor while not in testing mode
+     */
+    public static void TAI_SparkMAX_Power(CANSparkMax motor, String actuatorName, double normalOutput){
+        // Get Dashboard testing values
+        testingActuator = Dashboard.testActuatorName.get();
+        testingPeriod = Dashboard.testActuatorPeriod.get();
+        testingValue = Dashboard.testActuatorValue.get();
+
+        //If nothing is being tested, return the normal output. Otherwise, uses dashboard amplitude as double output or periodic sine output
+        if (testingActuator.equals("No_Test")) {
+            motor.set(normalOutput);
+        }
+        else if (testingActuator.equals(actuatorName)) {
+            if (testingPeriod == 0){
+                motor.set(testingValue);
+            } else {
+                motor.set(testingValue * Math.sin((double)System.currentTimeMillis() * 0.001 * Math.PI / testingPeriod));
+            }
+        }
+        else {
+            motor.set(0);
+        }
+    }
+
+
+
+    /**
+     * Actuator testing:
+     * <ul>   
+     * <li> If the Dashboard is not testing anything, set normal output as a PositionDutyCycle command
+     * <li> If the Dashboard is testing this actuator:
+     *  <ul>
+     *  <li> Output the amplitude from the Dashboard as a DutyCycleOut command
+     *  <li> Output a time based sinusoid with amplitude from the Dashboard as a DutyCycleOut command is period is given
+     *  </ul>
+     * <li> If the Dashboard is testing a different actuator, set DutyCycleOut command of 0
+     * </ul>
+     * 
+     * This sets DutyCycleOut commands for TalonFX motors in actuator testing
+     *      
+     * @param motor The TalonFX motor object to output to
+     * @param actuatorName The name of the actuator matching the list in Robot.java
+     * @param normalOutput The output in rotations that would go to the motor while not in testing mode
+     */
+    public static void TAI_SparkMAX_Position(CANSparkMax motor, SparkPIDController pidController, String actuatorName, double normalOutput){
+        // Get Dashboard testing values
+        testingActuator = Dashboard.testActuatorName.get();
+        testingPeriod = Dashboard.testActuatorPeriod.get();
+        testingValue = Dashboard.testActuatorValue.get();
+
+        //If nothing is being tested, return the normal output. Otherwise, uses dashboard amplitude as double output or periodic sine output
+        if (testingActuator.equals("No_Test")) {
+            pidController.setReference(normalOutput, CANSparkBase.ControlType.kPosition);
+        }
+        else if (testingActuator.equals(actuatorName)) {
+            if (testingPeriod == 0){
+                motor.set(testingValue);
+            } else {
+                motor.set(testingValue * Math.sin((double)System.currentTimeMillis() * 0.001 * Math.PI / testingPeriod));
+            }
+        }
+        else {
+            motor.set(0);
+        }
+    } 
+
+
+    /**
+     * Actuator testing:
+     * <ul>   
+     * <li> If the Dashboard is not testing anything, set normal output (true is forward, false is reverse)
+     * <li> If the Dashboard is testing this actuator, set true or false if the Dashboard amplitude is 0 or 1 respectively
+     * <li> If the Dashboard is testing a different actuator, set 0 (false / reverse)
      * </ul><br>
      * 
-     * This returns a boolean output for a solenoid/piston
+     * This sets a boolean output for a solenoid/piston
      * 
-     * @param actuatorName
-     * @param normalOutput
-     * @return
+     * @param solenoid The solenoid to output to
+     * @param actuatorName The name of the actuator matching the list in Robot.java
+     * @param normalOutput The output (true or false) that would go to the solenoid while not in testing mode
      */
-    public static boolean TAI_Solenoids(String actuatorName, boolean normalOutput){
+    public static void TAI_Solenoids(DoubleSolenoid solenoid, String actuatorName, boolean normalOutput){
         // Get dashboard test values
         testingActuator = Dashboard.testActuatorName.get();
         testingValue = Dashboard.testActuatorValue.get();
 
+        Value normalValue = (normalOutput) ? Value.kForward : Value.kReverse;
+
         // If nothing is being tested, return the normal output. Otherwise, uses dashboard amplitude as 1 or 0 for an output
         if (testingActuator.equals("No_Test")) {
-            return normalOutput;
+            solenoid.set(normalValue);
         }
         else if (testingActuator.equals(actuatorName)) {
             if (testingValue == 1.0) {
-                return true;
+                solenoid.set(Value.kForward);
             } else {
-                return false;
+                solenoid.set(Value.kReverse);
             }
         }
         else {
-            return false;
+            solenoid.set(Value.kReverse);
         }
     }
 

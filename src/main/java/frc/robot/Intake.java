@@ -85,9 +85,9 @@ public class Intake {
     }
 
     public void updateOutputs() {
-        inner.set(ActuatorInterlocks.TAI_Motors("Center_Intake_(p)", (enabled) ? innerIntakePower : 0));
-        front.set(ActuatorInterlocks.TAI_Motors("Outer_Roller_Front_(p)", (enabled) ? outerIntakePower : 0));
-        back.set(ActuatorInterlocks.TAI_Motors("Outer_Roller_Back_(p)", (enabled) ? outerIntakePower : 0));
-        indexer.set(ActuatorInterlocks.TAI_Motors("Indexer_(p)", (indexing) ? indexerIntakePower : 0));
+        ActuatorInterlocks.TAI_TalonFX_Power(inner, "Center_Intake_(p)", (enabled) ? innerIntakePower : 0);
+        ActuatorInterlocks.TAI_TalonFX_Power(front, "Outer_Roller_Front_(p)", (enabled) ? outerIntakePower : 0);
+        ActuatorInterlocks.TAI_TalonFX_Power(back, "Outer_Roller_Back_(p)", (enabled) ? outerIntakePower : 0);
+        ActuatorInterlocks.TAI_SparkMAX_Power(indexer, "Indexer_(p)", (indexing) ? indexerIntakePower : 0);
     }
 }

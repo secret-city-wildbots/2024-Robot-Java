@@ -1,5 +1,6 @@
 package frc.robot;
 
+import edu.wpi.first.networktables.BooleanSubscriber;
 import edu.wpi.first.networktables.DoubleArrayPublisher;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.NetworkTable;
@@ -13,6 +14,7 @@ public class Dashboard {
     @SuppressWarnings("unused")
     private NetworkTable table;
 
+    // Array publishers
     public static StringArrayPublisher legalActuatorNames;
     public static StringArrayPublisher legalDrivers;
     public static DoubleArrayPublisher swerve0Details;
@@ -20,12 +22,18 @@ public class Dashboard {
     public static DoubleArrayPublisher swerve2Details;
     public static DoubleArrayPublisher swerve3Details;
 
+    // Subscribers
     public static StringSubscriber testActuatorName;
     public static DoubleSubscriber testActuatorValue;
     public static DoubleSubscriber testActuatorPeriod;
     public static DoubleSubscriber selectedDriver;
+    public static BooleanSubscriber unlockAzimuth;
 
 
+
+    /**
+     * Creates an object for storing dashboard publishers and subscribers
+     */
     public Dashboard(){
         NetworkTableInstance inst = NetworkTableInstance.getDefault();
         NetworkTable table = inst.getTable("SmartDashboard");
@@ -41,5 +49,6 @@ public class Dashboard {
         testActuatorValue = table.getDoubleTopic("Test_Actuator_Value").subscribe(0.0);
         testActuatorPeriod = table.getDoubleTopic("Test_Actuator_Period").subscribe(0.0);
         selectedDriver = table.getDoubleTopic("Selected_Driver").subscribe(0.0);
+        unlockAzimuth = table.getBooleanTopic("Unlock_Azimuth").subscribe(false);
     }
 }

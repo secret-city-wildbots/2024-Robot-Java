@@ -13,6 +13,7 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import frc.robot.Robot.MasterStates;
 import frc.robot.Utility.Control;
@@ -28,13 +29,15 @@ public class Drivetrain {
   public static final double maxGroundSpeed = 16; // ft/s
   public static final double maxRotateSpeed = 360 * (12 * maxGroundSpeed)
       / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength / 2, 2) + Math.pow(Robot.robotWidth / 2, 2)))); // deg/s
+  public static final double actualWheelDiameter = 3; // inches
 
-  private final TalonFXConfiguration[] configs = SwerveUtils.swerveModuleConfigs();
+  private final TalonFXConfiguration[] driveConfigs = SwerveUtils.swerveModuleDriveConfigs();
+  private final TalonFXConfiguration[] azimuthConfigs = SwerveUtils.swerveModuleAzimuthConfigs();
 
-  private final NewSwerveModule module0 = new NewSwerveModule(driveGearRatio, azimuthGearRatio, 0, configs[0]);
-  private final NewSwerveModule module1 = new NewSwerveModule(driveGearRatio, azimuthGearRatio, 1, configs[1]);
-  private final NewSwerveModule module2 = new NewSwerveModule(driveGearRatio, azimuthGearRatio, 2, configs[2]);
-  private final NewSwerveModule module3 = new NewSwerveModule(driveGearRatio, azimuthGearRatio, 3, configs[3]);
+  private final SwerveModule module0 = new SwerveModule(driveGearRatio, azimuthGearRatio, 0, driveConfigs[0], azimuthConfigs[0]);
+  private final SwerveModule module1 = new SwerveModule(driveGearRatio, azimuthGearRatio, 1, driveConfigs[1], azimuthConfigs[1]);
+  private final SwerveModule module2 = new SwerveModule(driveGearRatio, azimuthGearRatio, 2, driveConfigs[2], azimuthConfigs[2]);
+  private final SwerveModule module3 = new SwerveModule(driveGearRatio, azimuthGearRatio, 3, driveConfigs[3], azimuthConfigs[3]);
 
   private final Translation2d m_module0Location = new Translation2d(0.254, -0.311);
   private final Translation2d m_module1Location = new Translation2d(0.254, 0.311);
@@ -55,9 +58,30 @@ public class Drivetrain {
           module3.getPosition()
       });
 
+  SlewRateLimiter xAccelerationLimiter = new SlewRateLimiter(1, -1000, 0.0);
+  SlewRateLimiter yAccelerationLimiter = new SlewRateLimiter(1, -1000, 0.0);
+
+  private SwerveModuleState[] moduleStates;
+
+  // Used for modeDrivebase to check if master states changed
+  private Robot.MasterStates masterState0 = Robot.masterState;
+
   public double swerveGroundSpeed = 2;
   private boolean headingLocked = false;
   private final PIDController strafePID = new PIDController(0, 0, 0);
+
+  // Variables stored for the assist heading function
+  private StickyButton highSpeedSticky = new StickyButton();
+  private boolean headingAssist = false;
+  private Latch headingLatch = new Latch(0.0);
+  private PIDController antiDriftPID = new PIDController(0, 0, 0);
+  private PIDController headingAnglePID = new PIDController(0, 0, 0);
+  private boolean headingLatchSignal0 = false;
+  private double headingFudgeTime = System.currentTimeMillis();
+  private double driverHeadingFudge0 = 0.0;
+  private StickyButton noRotationSticky = new StickyButton();
+  private boolean lockHeading0 = false;
+  private final double headingFudgeMax = 10; // degrees
 
   public SwerveDriveOdometry updateOdometry() {
     m_odometry.update(
@@ -76,81 +100,78 @@ public class Drivetrain {
     headingAnglePID.enableContinuousInput(0, 360);
   }
 
-  private SwerveModuleState[] moduleStates;
-
-  SlewRateLimiter xAccelerationLimiter = new SlewRateLimiter(1, -1000, 0.0);
-  SlewRateLimiter yAccelerationLimiter = new SlewRateLimiter(1, -1000, 0.0);
-
-
-
-
+  /**
+   * Adjusts joystick outputs based on driver profile, acceleration limits,
+   * assisted and locked headings, and driving orientation
+   * and stores them in the modulestates[] object
+   * 
+   * @param driverController
+   * @param isAutonomous
+   * @param period           How long it has been since the last loop cycle
+   */
   public void drive(XboxController driverController, boolean isAutonomous, double period) {
-
+    // Adjust strafe outputs
     double[] strafeOutputs = SwerveUtils.swerveScaleStrafe(driverController, isAutonomous);
-
-    if (Math.abs(strafeOutputs[0]) > 0.001 || Math.abs(strafeOutputs[1]) > 0.001) {
-      strafeInDeadband = false;
-    } else {
-      strafeInDeadband = true;
-    }
-
-    double rotateOutput = SwerveUtils.swerveScaleRotate(driverController, isAutonomous);
-
-    if (Math.abs(rotateOutput) > 0.001) {
-      rotationInDeadband = false;
-    } else {
-      rotationInDeadband = true;
-    }
-
-
     double limitedStrafeX = Math.signum(strafeOutputs[0]) * xAccelerationLimiter.calculate(Math.abs(strafeOutputs[0]));
     double limitedStrafeY = Math.signum(strafeOutputs[1]) * yAccelerationLimiter.calculate(Math.abs(strafeOutputs[1]));
 
-    double[] limitedStrafe = new double[]{limitedStrafeX, limitedStrafeY};
-      
+    double[] limitedStrafe = new double[] { limitedStrafeX, limitedStrafeY };
+
     double[] assistedStrafe = SwerveUtils.assistStrafe(limitedStrafe, new double[] { Double.NaN, Double.NaN },
         strafePID);
+    double[] orientedStrafe = SwerveUtils.fieldOrientedTransform(assistedStrafe, m_pigeon.getAngle() % 360);
+
+    // Adjust rotate outputs
+    double rotateOutput = SwerveUtils.swerveScaleRotate(driverController, isAutonomous);
 
     double assistedRotation = swerveAssistHeading(modeDrivebase(driverController), rotateOutput, limitedStrafe,
         isAutonomous, driverController);
 
-    double[] orientedStrafe = SwerveUtils.fieldOrientedTransform(assistedStrafe, m_pigeon.getAngle() % 360);
-
+    //Store information in modulestates
     moduleStates = m_kinematics.toSwerveModuleStates(
         ChassisSpeeds.discretize(ChassisSpeeds.fromFieldRelativeSpeeds(
             orientedStrafe[0], orientedStrafe[1], assistedRotation, m_pigeon.getRotation2d()), period));
     SwerveDriveKinematics.desaturateWheelSpeeds(moduleStates, 1);
 
+    moduleStates[0].speedMetersPerSecond = SwerveUtils.driveCommandToPower(moduleStates[0], module0.shifter.get() == Value.kForward);
+    moduleStates[1].speedMetersPerSecond = SwerveUtils.driveCommandToPower(moduleStates[1], module1.shifter.get() == Value.kForward);
+    moduleStates[2].speedMetersPerSecond = SwerveUtils.driveCommandToPower(moduleStates[2], module2.shifter.get() == Value.kForward);
+    moduleStates[3].speedMetersPerSecond = SwerveUtils.driveCommandToPower(moduleStates[3], module3.shifter.get() == Value.kForward);
 
-
-    Dashboard.swerve0Details.set(new double[]{
-      moduleStates[0].angle.getDegrees(),
-      module0.getTemp(),
-      moduleStates[0].speedMetersPerSecond,
-      0.0 
+    // Report to the dashboard
+    Dashboard.swerve0Details.set(new double[] {
+        moduleStates[0].angle.getDegrees(),
+        module0.getTemp(),
+        moduleStates[0].speedMetersPerSecond,
+        0.0
     });
-    Dashboard.swerve1Details.set(new double[]{
-      moduleStates[1].angle.getDegrees(),
-      module1.getTemp(),
-      moduleStates[1].speedMetersPerSecond,
-      0.0 
+    Dashboard.swerve1Details.set(new double[] {
+        moduleStates[1].angle.getDegrees(),
+        module1.getTemp(),
+        moduleStates[1].speedMetersPerSecond,
+        0.0
     });
-    Dashboard.swerve2Details.set(new double[]{
-      moduleStates[2].angle.getDegrees(),
-      module2.getTemp(),
-      moduleStates[2].speedMetersPerSecond,
-      0.0 
+    Dashboard.swerve2Details.set(new double[] {
+        moduleStates[2].angle.getDegrees(),
+        module2.getTemp(),
+        moduleStates[2].speedMetersPerSecond,
+        0.0
     });
-    Dashboard.swerve3Details.set(new double[]{
-      moduleStates[3].angle.getDegrees(),
-      module3.getTemp(),
-      moduleStates[3].speedMetersPerSecond,
-      0.0 
+    Dashboard.swerve3Details.set(new double[] {
+        moduleStates[3].angle.getDegrees(),
+        module3.getTemp(),
+        moduleStates[3].speedMetersPerSecond,
+        0.0
     });
   }
 
-  private Robot.MasterStates masterState0 = Robot.masterState;
+  
 
+  /**
+   * 
+   * @param driverController
+   * @return
+   */
   private double modeDrivebase(XboxController driverController) {
     if ((masterState0 != Robot.masterState) || (driverController.getYButton())) {
       headingLocked = true;
@@ -195,20 +216,17 @@ public class Drivetrain {
     }
   }
 
-  private StickyButton highSpeedSticky = new StickyButton();
-  private boolean headingAssist = false;
-  private Latch headingLatch = new Latch(0.0);
-  private PIDController antiDriftPID = new PIDController(0, 0, 0);
-  private PIDController headingAnglePID = new PIDController(0, 0, 0);
-  private boolean headingLatchSignal0 = false;
-  private double headingFudgeTime = System.currentTimeMillis();
-  private double driverHeadingFudge0 = 0.0;
-  private StickyButton noRotationSticky = new StickyButton();
-  private boolean lockHeading0 = false;
-  private final double headingFudgeMax = 10; // degrees
-  private boolean rotationInDeadband;
-  private boolean strafeInDeadband;
+  
 
+  /**
+   * Adjusts joystick outputs to help with angle drift and heading locking
+   * @param lockedHeading If the heading is locked
+   * @param joystickRotation 
+   * @param limitedStrafe
+   * @param isAutonomous
+   * @param driverController
+   * @return Locked or assisted heading output
+   */
   private double swerveAssistHeading(double lockedHeading, double joystickRotation, double[] limitedStrafe,
       boolean isAutonomous, XboxController driverController) {
     double pigeonAngle = m_pigeon.getAngle() % 360;
@@ -238,13 +256,12 @@ public class Drivetrain {
               (!headingLatchSignal0) && headingLatchSignal,
               !headingLatchSignal));
       headingLatchSignal0 = headingLatchSignal;
-      rotationInDeadband |= headingAssist;
       return assistedRotation;
     } else {
       headingAssist = true;
       double headingFudgeDeltaT = System.currentTimeMillis() - headingFudgeTime;
       headingFudgeTime = System.currentTimeMillis();
-      String currentProfile = Robot.legalDrivers[(int)Dashboard.selectedDriver.get(0.0)];
+      String currentProfile = Robot.legalDrivers[(int) Dashboard.selectedDriver.get(0.0)];
       double driverHeadingFudge;
       if (driverController.getBButton() || driverController.getYButton() || lockHeading0 == false) {
         driverHeadingFudge = 0.0;
@@ -257,41 +274,44 @@ public class Drivetrain {
       driverHeadingFudge0 = Control.clamp(driverHeadingFudge0, headingFudgeMax, -1 * headingFudgeMax);
       lockHeading0 = true;
       double assistedRotation = headingAnglePID.calculate(pigeonAngle, lockedHeading + driverHeadingFudge0);
-      rotationInDeadband = Math.abs(assistedRotation) < 0.02;
       return (Math.abs(assistedRotation) > 0.02) ? assistedRotation : 0.0;
     }
   }
 
-  
   private boolean[] driveFaults = new boolean[4];
   private boolean[] azimuthFaults = new boolean[4];
-
-
 
   /**
    * 
    * @return A boolean array with the structure:
-   *  <ul>
-   *    <li> drive faults
-   *    <li> azimuth faults
+   *         <ul>
+   *         <li>drive faults
+   *         <li>azimuth faults
    */
   public boolean[] getFaults() {
     boolean[] faults0 = module0.getSwerveFaults();
     boolean[] faults1 = module1.getSwerveFaults();
     boolean[] faults2 = module2.getSwerveFaults();
     boolean[] faults3 = module3.getSwerveFaults();
+    driveFaults = new boolean[]{faults0[0], faults1[0], faults2[0], faults3[0]};
+    azimuthFaults = new boolean[]{faults0[1], faults1[1], faults2[1], faults3[1]};
     boolean driveFault = faults0[0] || faults1[0] || faults2[0] || faults3[0];
     boolean azimuthFault = faults0[1] || faults1[1] || faults2[1] || faults3[1];
-    return new boolean[]{driveFault, azimuthFault};
+    return new boolean[] { driveFault, azimuthFault };
   }
 
-  
+
+
+  /**
+   * Sends stored modulestate outputs to each individual module
+   * @param isAutonomous
+   */
   public void updateOutputs(boolean isAutonomous) {
     boolean[] faults = getFaults();
     boolean fLow = faults[0] || faults[1];
-    module0.updateOutputs(moduleStates[0], isAutonomous, fLow);
-    module1.updateOutputs(moduleStates[1], isAutonomous, fLow);
-    module2.updateOutputs(moduleStates[2], isAutonomous, fLow);
-    module3.updateOutputs(moduleStates[3], isAutonomous, fLow);
+    module0.updateOutputs(moduleStates[0], isAutonomous, fLow, driveFaults[0] || azimuthFaults[0]);
+    module1.updateOutputs(moduleStates[1], isAutonomous, fLow, driveFaults[1] || azimuthFaults[1]);
+    module2.updateOutputs(moduleStates[2], isAutonomous, fLow, driveFaults[2] || azimuthFaults[2]);
+    module3.updateOutputs(moduleStates[3], isAutonomous, fLow, driveFaults[3] || azimuthFaults[3]);
   }
 }
