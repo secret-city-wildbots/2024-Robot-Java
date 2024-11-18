@@ -7,49 +7,59 @@ import com.ctre.phoenix6.hardware.TalonFX;
 //import com.ctre.phoenix6.signals.ReverseLimitValue;
 
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.Utility.ActuatorInterlocks;
 
 public class Elevator {
     public static boolean stowed = true;
+    public static boolean climbed = false;
+
+    private double height = 0;
 
     private final TalonFX elevator = new TalonFX(17, "rio");
     private TalonFXConfiguration elevatorConfig = new TalonFXConfiguration();
 
     private final double elevatorRatio; // from inches to rotations, multiplier
-    private double elevatorFeedForward = 0;
+    private final double elevatorFeedForward;
     private double elevatorArbitraryFFScalar = 0;
     private double elevatorOutput = 0; // inches
+    private final double allowedError = 0.2; // inches
 
     private PIDController elevatorController = new PIDController(0, 0, 0);
 
-    private MotionMagicConfigs m = elevatorConfig.MotionMagic;
+    private MotionMagicConfigs motionMagicConfigs = elevatorConfig.MotionMagic;
 
     private final PositionDutyCycle elevatorControlRequest = new PositionDutyCycle(0).withSlot(0);
 
-    public Elevator(double ratio) {
-        elevatorRatio = ratio;
-
-        SmartDashboard.putData("Elevator PID Controller", elevatorController);
-        SmartDashboard.putNumber("Elevator FF Scalar", elevatorArbitraryFFScalar);
-        SmartDashboard.putNumber("Elevator FF Output", elevatorFeedForward);
+    public Elevator() {
+        switch (Robot.robotProfile) {
+            case "2024_Robot":
+                elevatorRatio = 7.72;
+                break;
+            case "Steve2":
+                elevatorRatio = 7.72;
+                break;
+            default:
+                elevatorRatio = 7.72;
+        }
+        
 
         elevatorConfig.Slot0.kP = elevatorController.getP();
         elevatorConfig.Slot0.kI = elevatorController.getI();
         elevatorConfig.Slot0.kD = elevatorController.getD();
 
-        m.MotionMagicCruiseVelocity = 80; // Target cruise velocity of 80 rps
-        m.MotionMagicAcceleration = 160; // Target acceleration of 160 rps/s (0.5 seconds)
-        m.MotionMagicJerk = 1600; // Target jerk of 1600 rps/s/s (0.1 seconds)
+        motionMagicConfigs.MotionMagicCruiseVelocity = 80; // Target cruise velocity of 80 rps
+        motionMagicConfigs.MotionMagicAcceleration = 160; // Target acceleration of 160 rps/s (0.5 seconds)
+        motionMagicConfigs.MotionMagicJerk = 1600; // Target jerk of 1600 rps/s/s (0.1 seconds)
 
         elevator.getConfigurator().apply(elevatorConfig);
+
+        // gravity * mass * arbitrary FF scalar
+        elevatorFeedForward = 32.17 * 20 * elevatorArbitraryFFScalar;
     }
 
-    public void updateSensors() {
-        // gravity * Elevator mass * arbitrary scalar
-        elevatorArbitraryFFScalar = SmartDashboard.getNumber("Elevator FF Scalar", 1);
-        elevatorFeedForward = 32.17 * 20 * elevatorArbitraryFFScalar;
-        SmartDashboard.putNumber("Elevator FF Output", elevatorFeedForward);
+    public void updateSensors() {     
+        height = elevator.getPosition().getValueAsDouble() / elevatorRatio;
+        climbed = Math.abs(height - elevatorOutput) < allowedError;
     }
 
     public void updateElevator() {
@@ -67,19 +77,6 @@ public class Elevator {
             case TRAP:
                 // idk what to put here yet, it depends on the trap sequence
                 break;
-        }
-
-        double kp = ((PIDController) SmartDashboard.getData("Elevator PID Controller")).getP();
-        double ki = ((PIDController) SmartDashboard.getData("Elevator PID Controller")).getI();
-        double kd = ((PIDController) SmartDashboard.getData("Elevator PID Controller")).getD();
-
-        if ((elevatorController.getP() != kp) || (elevatorController.getP() != kp)
-                || (elevatorController.getP() != kp)) { // only update pid's when needed
-            elevatorController.setPID(kp, ki, kd);
-            elevatorConfig.Slot0.kP = kp;
-            elevatorConfig.Slot0.kI = ki;
-            elevatorConfig.Slot0.kD = kd;
-            elevator.getConfigurator().apply(elevatorConfig);
         }
     }
 

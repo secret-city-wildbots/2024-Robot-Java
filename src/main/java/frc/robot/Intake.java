@@ -14,12 +14,12 @@ import frc.robot.Utility.ActuatorInterlocks;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 
 public class Intake {
-    private boolean enabled = false;
+    public static boolean enabled = false;
     private boolean indexing = false;
     private double outerIntakePower;
     private double innerIntakePower;
     private double indexerIntakePower;
-    public boolean bbBroken = false;
+    public static boolean bbBroken = false;
 
     public double innerTemp = -1;
     public double frontTemp = -1;
@@ -54,7 +54,7 @@ public class Intake {
         backTemp = back.getDeviceTemp().getValueAsDouble();
     }
 
-    public void updateIntake(XboxController driveController, boolean readyToShoot) {
+    public void updateIntake(XboxController driveController) {
         // Turns off intake and allow indexing when note is picked up
         if (bbBroken) {
             enabled = false;
@@ -67,7 +67,7 @@ public class Intake {
         }
         indexing = (driveController.getLeftTriggerAxis() > 0.7) ||
                 (enabled && (!bbBroken)) ||
-                (bbBroken && (driveController.getRightTriggerAxis() > 0.7) && readyToShoot);
+                (bbBroken && (driveController.getRightTriggerAxis() > 0.7) && Shooter.spunUp);
     }
 
     public void toggle() {

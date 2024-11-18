@@ -26,7 +26,8 @@ public class SwerveModule {
     private final double shiftToLowRPM = 500;
     private static final double kWheelRadius = 0.0636;
 
-    private final double driveRatio;
+    private final double driveHighGearRatio;
+    private final double driveLowGearRatio;
     private final double azimuthRatio;
     private final int moduleNumber;
 
@@ -47,22 +48,27 @@ public class SwerveModule {
     Timer shiftThreshold = new Timer();
     Timer robotDisabled = new Timer();
 
-
-
     /**
      * Creates a new swerve module object
      * 
-     * @param driveRatio   The gear ratio between the drive motor and the wheel
-     * @param azimuthRatio The gear ratio between the azimuth motor and the rotation
-     *                     of the wheel
-     * @param moduleNumber The number of the module starting at 0 in the top right
-     *                     and increasing in a ccw circle
-     * @param driveConfig      Configurations for the drive motor, use
-     *                     SwerveUtils.swerveModuleDriveConfigs()
-     * @param azimuthConfig Configurations for the azimuth motor, use SwerveUtils.swerveModuleAzimuthConfigs()
+     * @param driveHighGearRatio The gear ratio between the drive motor and the
+     *                           wheel in high gear
+     * @param driveLowGearRatio  The gear ratio between the drive motor and the
+     *                           wheel in low gear
+     * @param azimuthRatio       The gear ratio between the azimuth motor and the
+     *                           rotation
+     *                           of the wheel
+     * @param moduleNumber       The number of the module starting at 0 in the top
+     *                           right
+     *                           and increasing in a ccw circle
+     * @param driveConfig        Configurations for the drive motor, use
+     *                           SwerveUtils.swerveModuleDriveConfigs()
+     * @param azimuthConfig      Configurations for the azimuth motor, use
+     *                           SwerveUtils.swerveModuleAzimuthConfigs()
      * 
      */
-    public SwerveModule(double driveRatio, double azimuthRatio, int moduleNumber, TalonFXConfiguration driveConfig, TalonFXConfiguration azimuthConfig) {
+    public SwerveModule(double driveHighGearRatio, double driveLowGearRatio, double azimuthRatio, int moduleNumber,
+            TalonFXConfiguration driveConfig, TalonFXConfiguration azimuthConfig) {
         if (moduleNumber < 3) {
             shifter = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2 - moduleNumber, 13 + moduleNumber);
         } else {
@@ -70,7 +76,8 @@ public class SwerveModule {
         }
         shifter.set(Value.kForward);
 
-        this.driveRatio = driveRatio;
+        this.driveHighGearRatio = driveHighGearRatio;
+        this.driveLowGearRatio = driveLowGearRatio;
         this.azimuthRatio = azimuthRatio;
         this.moduleNumber = moduleNumber;
 
@@ -101,8 +108,6 @@ public class SwerveModule {
         this.drive.getConfigurator().apply(driveConfig);
     }
 
-
-
     /**
      * Returns the position of the drive and azimuth motors
      * 
@@ -118,11 +123,9 @@ public class SwerveModule {
                     (azimuthTalon.getRotorPosition().getValueAsDouble() / azimuthRatio) * 2 * Math.PI);
         }
         return new SwerveModulePosition(
-                (drive.getRotorPosition().getValueAsDouble() / driveRatio) * (2 * Math.PI * kWheelRadius),
+                (drive.getRotorPosition().getValueAsDouble() / ((shifter.get() == Value.kForward) ? driveHighGearRatio : driveLowGearRatio)) * (2 * Math.PI * kWheelRadius),
                 rotation);
     }
-
-
 
     /**
      * Gets any faults from the drive and azimuth motors
@@ -144,16 +147,15 @@ public class SwerveModule {
         return new boolean[] { driveFault, azimuthFault };
     }
 
-
-
     /**
      * Sends modulestate outputs to the drive, azimuth, and shifter
      * 
      * @param moduleState
      * @param isAutonomous
      */
-    public void updateOutputs(SwerveModuleState moduleState, boolean isAutonomous, boolean fLow, boolean moduleFailure) {
-        //Decide shifter output
+    public void updateOutputs(SwerveModuleState moduleState, boolean isAutonomous, boolean fLow,
+            boolean moduleFailure) {
+        // Decide shifter output
         if (fLow) {
             shifterOutput0 = false;
         } else {
@@ -192,7 +194,7 @@ public class SwerveModule {
 
         // Decide whether to put azimuth in coast mode
         boolean unlockAzimuth = Dashboard.unlockAzimuth.get();
-        if ((unlockAzimuth != unlockAzimuth0) || moduleFailure){
+        if ((unlockAzimuth != unlockAzimuth0) || moduleFailure) {
             if (unlockAzimuth || moduleFailure) {
                 if (azimuthSparkActive) {
                     azimuthSpark.setIdleMode(IdleMode.kCoast);
@@ -209,12 +211,15 @@ public class SwerveModule {
         }
         unlockAzimuth0 = unlockAzimuth;
 
-        //Output drive
+        // Output drive
         ActuatorInterlocks.TAI_TalonFX_Power(drive, "Drive_" + ((Integer) moduleNumber).toString() + "_(p)",
                 moduleState.speedMetersPerSecond);
-        
-        // unlock drive motor if robot is disabled for more than 7 seconds or module fails
-        if (DriverStation.isEnabled()) {robotDisabled.reset();}
+
+        // unlock drive motor if robot is disabled for more than 7 seconds or module
+        // fails
+        if (DriverStation.isEnabled()) {
+            robotDisabled.reset();
+        }
 
         if (((robotDisabled.getTimeMillis() > 7000) != unlockDrive0) || moduleFailure) {
             if (moduleFailure || (robotDisabled.getTimeMillis() > 7000)) {
@@ -225,8 +230,6 @@ public class SwerveModule {
         }
         unlockDrive0 = robotDisabled.getTimeMillis() > 7000;
     }
-
-
 
     /**
      * Temperature of drive motor

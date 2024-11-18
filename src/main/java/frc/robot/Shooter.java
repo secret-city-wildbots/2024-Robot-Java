@@ -37,7 +37,7 @@ public class Shooter {
     public double leftVelocity = -1;
     public double wristAngle = -1;
 
-    public boolean spunUp = false;
+    public static boolean spunUp = false;
 
     private double wristOutput = -1; // degrees
 
@@ -59,11 +59,21 @@ public class Shooter {
 
     public Shooter(
             double shootPower,
-            double shooterWheelRatio,
-            double wristGearRatio) {
+            double shooterWheelRatio) {
+
+        switch (Robot.robotProfile) {
+            case "2024_Robot":
+                wristRatio = 98;
+                break;
+            case "Steve2":
+                wristRatio = 98;
+                break;
+            default:
+                wristRatio = 98;
+        }
+        
         shooterPower = shootPower;
         shooterRatio = shooterWheelRatio;
-        wristRatio = wristGearRatio;
 
         wristConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         wristConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
@@ -80,10 +90,6 @@ public class Shooter {
         leftConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         leftConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         left.getConfigurator().apply(leftConfig);
-
-        SmartDashboard.putData("Wrist PID Controller", wristController);
-        SmartDashboard.putNumber("Wrist FF Scalar", wristArbitraryFFScalar);
-        SmartDashboard.putNumber("Wrist FF Output", wristFeedForward);
 
         wrist.setPosition(0);
     }

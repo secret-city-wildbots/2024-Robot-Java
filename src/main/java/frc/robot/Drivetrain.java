@@ -24,20 +24,22 @@ import frc.robot.Utility.ClassHelpers.Latch;
 import frc.robot.Utility.ClassHelpers.StickyButton;
 
 public class Drivetrain {
-  public static final double driveGearRatio = 7;
-  public static final double azimuthGearRatio = 16;
-  public static final double maxGroundSpeed = 16; // ft/s
-  public static final double maxRotateSpeed = 360 * (12 * maxGroundSpeed)
-      / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength / 2, 2) + Math.pow(Robot.robotWidth / 2, 2)))); // deg/s
-  public static final double actualWheelDiameter = 3; // inches
+  public static double driveHighGearRatio;
+  public static double driveLowGearRatio;
+  public static double azimuthGearRatio;
+  public static double maxGroundSpeed; // ft/s
+  public static double maxLowGearSpeed; // ft/s
+  public static double maxRotateSpeed; // deg/s
+  public static double actualWheelDiameter; // inches
+  public static double nominalWheelDiameter; // inches
 
   private final TalonFXConfiguration[] driveConfigs = SwerveUtils.swerveModuleDriveConfigs();
   private final TalonFXConfiguration[] azimuthConfigs = SwerveUtils.swerveModuleAzimuthConfigs();
 
-  private final SwerveModule module0 = new SwerveModule(driveGearRatio, azimuthGearRatio, 0, driveConfigs[0], azimuthConfigs[0]);
-  private final SwerveModule module1 = new SwerveModule(driveGearRatio, azimuthGearRatio, 1, driveConfigs[1], azimuthConfigs[1]);
-  private final SwerveModule module2 = new SwerveModule(driveGearRatio, azimuthGearRatio, 2, driveConfigs[2], azimuthConfigs[2]);
-  private final SwerveModule module3 = new SwerveModule(driveGearRatio, azimuthGearRatio, 3, driveConfigs[3], azimuthConfigs[3]);
+  private final SwerveModule module0;
+  private final SwerveModule module1;
+  private final SwerveModule module2;
+  private final SwerveModule module3;
 
   private final Translation2d m_module0Location = new Translation2d(0.254, -0.311);
   private final Translation2d m_module1Location = new Translation2d(0.254, 0.311);
@@ -49,14 +51,7 @@ public class Drivetrain {
 
   private final Pigeon2 m_pigeon = new Pigeon2(6, "canivore");
 
-  public final SwerveDriveOdometry m_odometry = new SwerveDriveOdometry(
-      m_kinematics, m_pigeon.getRotation2d(),
-      new SwerveModulePosition[] {
-          module0.getPosition(),
-          module1.getPosition(),
-          module2.getPosition(),
-          module3.getPosition()
-      });
+  public final SwerveDriveOdometry m_odometry;
 
   SlewRateLimiter xAccelerationLimiter = new SlewRateLimiter(1, -1000, 0.0);
   SlewRateLimiter yAccelerationLimiter = new SlewRateLimiter(1, -1000, 0.0);
@@ -96,6 +91,53 @@ public class Drivetrain {
   }
 
   public Drivetrain() {
+    // Check for driver profile
+    switch (Robot.robotProfile) {
+      case "2024_Robot":
+        nominalWheelDiameter = 5;
+        actualWheelDiameter = 4.53;
+        maxGroundSpeed = 18.8 * (actualWheelDiameter / nominalWheelDiameter);
+        maxLowGearSpeed = 9.2 * (actualWheelDiameter / nominalWheelDiameter);
+        maxRotateSpeed = 360 * (12 * maxGroundSpeed) / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength / 2, 2) + Math.pow(Robot.robotWidth / 2, 2))));
+        driveHighGearRatio = 7.13;
+        driveLowGearRatio = 14.66;
+        azimuthGearRatio = 16;
+        break;
+      case "Steve2":
+        nominalWheelDiameter = 5;
+        actualWheelDiameter = 4.78;
+        maxGroundSpeed = 17.8 * (actualWheelDiameter / nominalWheelDiameter);
+        maxLowGearSpeed = 8.3 * (actualWheelDiameter / nominalWheelDiameter);
+        maxRotateSpeed = 360 * (12 * maxGroundSpeed) / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength / 2, 2) + Math.pow(Robot.robotWidth / 2, 2))));
+        driveHighGearRatio = 6.42;
+        driveLowGearRatio = 14.12;
+        azimuthGearRatio = 15.6;
+        break;
+      default:
+        nominalWheelDiameter = 5;
+        actualWheelDiameter = 4.78;
+        maxGroundSpeed = 17.8 * (actualWheelDiameter / nominalWheelDiameter);
+        maxLowGearSpeed = 8.3 * (actualWheelDiameter / nominalWheelDiameter);
+        maxRotateSpeed = 360 * (12 * maxGroundSpeed) / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength / 2, 2) + Math.pow(Robot.robotWidth / 2, 2))));
+        driveHighGearRatio = 6.42;
+        driveLowGearRatio = 14.12;
+        azimuthGearRatio = 15.6;
+    }
+
+    module0 = new SwerveModule(driveHighGearRatio, driveLowGearRatio, azimuthGearRatio, 0, driveConfigs[0], azimuthConfigs[0]);
+    module1 = new SwerveModule(driveHighGearRatio, driveLowGearRatio, azimuthGearRatio, 1, driveConfigs[1], azimuthConfigs[1]);
+    module2 = new SwerveModule(driveHighGearRatio, driveLowGearRatio, azimuthGearRatio, 2, driveConfigs[2], azimuthConfigs[2]);
+    module3 = new SwerveModule(driveHighGearRatio, driveLowGearRatio, azimuthGearRatio, 3, driveConfigs[3], azimuthConfigs[3]);
+
+    m_odometry = new SwerveDriveOdometry(
+      m_kinematics, m_pigeon.getRotation2d(),
+      new SwerveModulePosition[] {
+          module0.getPosition(),
+          module1.getPosition(),
+          module2.getPosition(),
+          module3.getPosition()
+      });
+
     antiDriftPID.enableContinuousInput(0, 360);
     headingAnglePID.enableContinuousInput(0, 360);
   }

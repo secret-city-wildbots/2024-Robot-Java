@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
+import frc.robot.Utility.FileHelpers;
 import edu.wpi.first.math.geometry.Pose2d;
 
 public class Robot extends TimedRobot {
@@ -21,16 +22,19 @@ public class Robot extends TimedRobot {
 
   public static MasterStates masterState = MasterStates.STOWED;
 
-  public static double robotLength = 19;
-  public static double robotWidth = 23;
+  public static double robotLength;
+  public static double robotWidth;
 
   private final Drivetrain drivetrain = new Drivetrain();
-  private final XboxController m_driverController = new XboxController(0);
-  private final XboxController m_manipController = new XboxController(1);
-  private final Intake m_intake = new Intake(0.5, 0.5, 0.5);
-  private final Shooter m_shooter = new Shooter(0.7, 0.576, 98);
-  private final Elevator m_elevator = new Elevator(7.72);
+  private final XboxController driverController = new XboxController(0);
+  private final XboxController manipController = new XboxController(1);
+  private final Intake intake = new Intake(0.5, 0.5, 0.5);
+  private final Shooter shooter = new Shooter(0.7, 0.576);
+  private final Elevator elevator = new Elevator();
   private final Compressor compressor = new Compressor(2, PneumaticsModuleType.REVPH);
+  private final LED led = new LED();
+
+  public static final String robotProfile = FileHelpers.readFile("/home/lvuser/calibrations/RobotProfile.txt");
 
   @SuppressWarnings("unused")
   private final Dashboard m_Dashboard = new Dashboard();
@@ -47,6 +51,10 @@ public class Robot extends TimedRobot {
   public Robot() {
     Dashboard.legalActuatorNames.set(actuatorNames);
     Dashboard.legalDrivers.set(legalDrivers);
+    if (robotProfile.equals("2024_Robot")) {
+      robotLength = 19;
+      robotWidth = 23;
+    }
   }
 
   @Override
@@ -73,36 +81,39 @@ public class Robot extends TimedRobot {
 
     // Check for any drive updates and drive accordingly
     Pose2d robotPosition = drivetrain.updateOdometry().getPoseMeters();
-    drivetrain.drive(m_driverController, isAutonomous(), getPeriod());
+    drivetrain.drive(driverController, isAutonomous(), getPeriod());
 
     // Check for state updates based on manip inputs
     updateMasterState();
 
     // Toggle intake if necessary
-    m_intake.updateIntake(m_driverController, m_shooter.spunUp);
+    intake.updateIntake(driverController);
 
     // Automatically adjust wrist and shooter based off of master state and
     // controller inputs
-    m_shooter.updateWrist(robotPosition);
-    m_shooter.updateShooter(m_driverController.getRightTriggerAxis() > 0.2,
-        m_driverController.getLeftTriggerAxis() > 0.7, robotPosition, m_intake.bbBroken);
+    shooter.updateWrist(robotPosition);
+    shooter.updateShooter(driverController.getRightTriggerAxis() > 0.2,
+        driverController.getLeftTriggerAxis() > 0.7, robotPosition, Intake.bbBroken);
 
-    m_elevator.updateElevator();
+    elevator.updateElevator();
+
+    led.updateLED(driverController, isAutonomous());
 
     updateOutputs();
   }
 
   private void getHighPrioritySensors() {
-    m_intake.updateSensors();
-    m_shooter.updateSensors();
-    m_elevator.updateSensors();
+    intake.updateSensors();
+    shooter.updateSensors();
+    elevator.updateSensors();
   }
 
   private void updateOutputs() {
-    m_intake.updateOutputs();
-    m_shooter.updateOutputs();
-    m_elevator.updateOutputs();
+    intake.updateOutputs();
+    shooter.updateOutputs();
+    elevator.updateOutputs();
     drivetrain.updateOutputs(isAutonomous());
+    led.updateOutputs();
   }
 
   @Override
@@ -117,13 +128,13 @@ public class Robot extends TimedRobot {
      * Right Trigger: SHOOTING
      * Left Trigger & Start Button: CLIMBING
      */
-    if (m_manipController.getLeftBumper()) {
+    if (manipController.getLeftBumper()) {
       masterState = MasterStates.STOWED;
-    } else if (masterState != MasterStates.CLIMBING && m_manipController.getRightBumper()) {
+    } else if (masterState != MasterStates.CLIMBING && manipController.getRightBumper()) {
       masterState = MasterStates.AMP;
-    } else if (masterState != MasterStates.CLIMBING && m_manipController.getRightTriggerAxis() > 0.7) {
+    } else if (masterState != MasterStates.CLIMBING && manipController.getRightTriggerAxis() > 0.7) {
       masterState = MasterStates.SHOOTING;
-    } else if (m_manipController.getLeftTriggerAxis() > 0.7 && m_manipController.getStartButton()) {
+    } else if (manipController.getLeftTriggerAxis() > 0.7 && manipController.getStartButton()) {
       masterState = MasterStates.CLIMBING;
     }
   }

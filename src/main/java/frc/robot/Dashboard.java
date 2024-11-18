@@ -27,8 +27,8 @@ public class Dashboard {
     public static DoubleSubscriber testActuatorValue;
     public static DoubleSubscriber testActuatorPeriod;
     public static DoubleSubscriber selectedDriver;
+    public static DoubleSubscriber freeTuningVariable;
     public static BooleanSubscriber unlockAzimuth;
-
 
 
     /**
@@ -49,6 +49,7 @@ public class Dashboard {
         testActuatorValue = table.getDoubleTopic("Test_Actuator_Value").subscribe(0.0);
         testActuatorPeriod = table.getDoubleTopic("Test_Actuator_Period").subscribe(0.0);
         selectedDriver = table.getDoubleTopic("Selected_Driver").subscribe(0.0);
+        freeTuningVariable = table.getDoubleTopic("Free_Tuning_Variable").subscribe(0);
         unlockAzimuth = table.getBooleanTopic("Unlock_Azimuth").subscribe(false);
     }
 }
