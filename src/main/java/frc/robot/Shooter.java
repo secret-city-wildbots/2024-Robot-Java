@@ -2,6 +2,7 @@ package frc.robot;
 
 import frc.robot.Utility.*;
 
+import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.TalonFX;
 // import com.ctre.phoenix6.signals.ForwardLimitValue;
@@ -11,6 +12,7 @@ import com.ctre.phoenix6.signals.ReverseLimitValue;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Shooter {
@@ -32,11 +34,12 @@ public class Shooter {
 
     public double rightTemp = -1;
     public double leftTemp = -1;
+    public double wristTemp = -1;
     public double rightVelocity = -1;
     public double leftVelocity = -1;
     public double wristAngle = -1;
 
-    public boolean spunUp = false;
+    public static boolean spunUp = false;
 
     private double wristOutput = -1; // degrees
 
@@ -45,6 +48,7 @@ public class Shooter {
     private final TalonFX left = new TalonFX(16, "rio");
 
     private TalonFXConfiguration wristConfig = new TalonFXConfiguration();
+    private Slot0Configs wristPIDConfigs = new Slot0Configs();
     private TalonFXConfiguration rightConfig = new TalonFXConfiguration();
     private TalonFXConfiguration leftConfig = new TalonFXConfiguration();
 
@@ -55,17 +59,33 @@ public class Shooter {
 
     private final double wristRatio;
 
+    private boolean unlockWrist0 = false;
+
     public Shooter(
             double shootPower,
-            double shooterWheelRatio,
-            double wristGearRatio) {
+            double shooterWheelRatio) {
+
+        switch (Robot.robotProfile) {
+            case "2024_Robot":
+                wristRatio = 98;
+                break;
+            case "Steve2":
+                wristRatio = 98;
+                break;
+            default:
+                wristRatio = 98;
+        }
+        
         shooterPower = shootPower;
         shooterRatio = shooterWheelRatio;
-        wristRatio = wristGearRatio;
 
         wristConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         wristConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
+        wristPIDConfigs.kP = wristController.getP();
+        wristPIDConfigs.kI = wristController.getI();
+        wristPIDConfigs.kD = wristController.getD();
         wrist.getConfigurator().apply(wristConfig);
+        wrist.getConfigurator().apply(wristPIDConfigs);
 
         rightConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
         rightConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
@@ -75,20 +95,21 @@ public class Shooter {
         leftConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         left.getConfigurator().apply(leftConfig);
 
-        SmartDashboard.putData("Wrist PID Controller", wristController);
-        SmartDashboard.putNumber("Wrist FF Scalar", wristArbitraryFFScalar);
-        SmartDashboard.putNumber("Wrist FF Output", wristFeedForward);
-
         wrist.setPosition(0);
     }
 
     public void updateSensors() {
         rightTemp = right.getDeviceTemp().getValueAsDouble();
         leftTemp = left.getDeviceTemp().getValueAsDouble();
+        Dashboard.shooterTemps.set(new double[]{leftTemp, rightTemp});
         rightVelocity = right.getRotorVelocity().getValueAsDouble() * 60;
         leftVelocity = left.getRotorVelocity().getValueAsDouble() * 60;
+        Dashboard.shooterVelocities.set(new double[]{leftVelocity, rightVelocity});
         wristStowed = wrist.getReverseLimit().getValue() == ReverseLimitValue.ClosedToGround;
         wristAngle = wrist.getRotorPosition().getValueAsDouble() / 2048 * 360 / wristRatio; // ticks -> degrees
+        Dashboard.wristPosition.set(wristAngle);
+        wristTemp = wrist.getDeviceTemp().getValueAsDouble();
+        Dashboard.wristTemp.set(wristTemp);
         if ((rightVelocity > (0.8 * shooterPower) * 6000)
                 && (leftVelocity > (0.8 * shooterPower * shooterRatio) * 6000)) {
             spunUp = true;
@@ -101,13 +122,23 @@ public class Shooter {
         SmartDashboard.putNumber("Wrist FF Output", wristFeedForward);
     }
 
-    public void updateWrist(Pose2d robotPosition) {
+    public void updateWrist(Pose2d robotPosition, XboxController manipController) {
+        if (manipController.getYButtonPressed()) {
+            state = ShooterStates.TACO;
+        } else if (manipController.getXButtonPressed()) {
+            state = ShooterStates.SUB;
+        } else if (manipController.getAButtonPressed()) {
+            state = ShooterStates.LOB;
+        }
+
+        Dashboard.shooterState.set(state.ordinal());
+
         switch (Robot.masterState) {
             case STOWED:
                 wristOutput = 0; // degrees
                 break;
             case SHOOTING:
-                switch (Shooter.state) {
+                switch (state) {
                     case SUB:
                         wristOutput = 0;
                         break;
@@ -149,36 +180,23 @@ public class Shooter {
     }
 
     private double calculateWristAngle(Pose2d robotPosition) {
-        return interpolateWristAngle(robotPosition.getY(), wristCalibrations);
-    }
-
-    private double interpolateWristAngle(double value, double[][] array) {
-        double[] col1 = ArrayHelpers.getColumn(array, 0);
-        double[] col2 = ArrayHelpers.getColumn(array, 1);
-        int length = col1.length - 1;
-        if (col1.length < 2) {
-            if (value < col1[0]) {
-                return col2[0] - (((col2[1] - col2[0]) / (col1[1] - col1[0])) * (col1[0] - value));
-            } else {
-                for (int i = 1; i < col1.length; i++) {
-                    if (value < col1[i]) {
-                        return col2[i - 1] + (((col2[i] - col2[i - 1]) / (col1[i] - col1[i - 1])) * (col1[i] - value));
-                    }
-                }
-                return col2[length] + (((col2[length] - col2[length - 1]) / (col1[length] - col1[length - 1]))
-                        * (value - col1[length]));
-            }
-        } else {
-            return 0;
-        }
+        return Control.interpolateCSV(robotPosition.getY(), wristCalibrations);
     }
 
     public void updateOutputs() {
-        // System.out.println(wrist.getRotorPosition().getValueAsDouble()*360/wristRatio);
-        // System.out.println(wristOutput);
-        right.set(ActuatorInterlocks.TAI_Motors("Shooter_Right_(p)", (spin) ? shooterPower : 0));
-        left.set(ActuatorInterlocks.TAI_Motors("Shooter_Left_(p)", (spin) ? shooterPower * shooterRatio : 0));
-        wrist.set(ActuatorInterlocks.TAI_Motors("Wrist_(p)", wristFeedForward + wristController
-                .calculate(wrist.getRotorPosition().getValueAsDouble() * 360 / wristRatio, wristOutput)));
+        ActuatorInterlocks.TAI_TalonFX_Power(right, "Shooter_Right_(p)", (spin) ? shooterPower : 0);
+        ActuatorInterlocks.TAI_TalonFX_Power(left, "Shooter_Left_(p)", (spin) ? shooterPower * shooterRatio : 0);
+        ActuatorInterlocks.TAI_TalonFX_Position(wrist, "Wrist_(p)", wristOutput / 360);
+
+        // Put Wrist in coast while unlocked and only when changed
+        boolean unlockWrist = Dashboard.unlockWrist.get();
+        if (unlockWrist!=unlockWrist0) {
+            if (unlockWrist) {
+                wrist.setNeutralMode(NeutralModeValue.Coast);
+            } else {
+                wrist.setNeutralMode(NeutralModeValue.Brake);
+            }
+        }
+        unlockWrist0 = unlockWrist;
     }
 }

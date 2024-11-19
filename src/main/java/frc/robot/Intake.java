@@ -4,6 +4,7 @@ package frc.robot;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.SparkAbsoluteEncoder;
 import com.revrobotics.SparkLimitSwitch;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 import com.revrobotics.SparkLimitSwitch.Type;
@@ -14,21 +15,27 @@ import frc.robot.Utility.ActuatorInterlocks;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 
 public class Intake {
-    private boolean enabled = false;
+    public static boolean enabled = false;
     private boolean indexing = false;
     private double outerIntakePower;
     private double innerIntakePower;
     private double indexerIntakePower;
-    public boolean bbBroken = false;
+    public static boolean bbBroken = false;
 
     public double innerTemp = -1;
     public double frontTemp = -1;
     public double backTemp = -1;
+    public double indexerTemp = -1;
+    public double innerVelocity = -1;
+    public double frontVelocity = -1;
+    public double backVelocity = -1;
+    public double indexerVelocity = -1;
 
     private final TalonFX inner = new TalonFX(19, "rio");
     private final TalonFX front = new TalonFX(24, "rio");
     private final TalonFX back = new TalonFX(25, "rio");
     private final CANSparkMax indexer = new CANSparkMax(18, MotorType.kBrushless);
+    private final SparkAbsoluteEncoder indexEncoder = indexer.getAbsoluteEncoder();
     private final SparkLimitSwitch beamBreak = indexer.getForwardLimitSwitch(Type.kNormallyOpen);
 
     public Intake(
@@ -49,12 +56,22 @@ public class Intake {
 
     public void updateSensors() {
         bbBroken = beamBreak.isPressed();
+        Dashboard.beambreak.set(bbBroken);
         innerTemp = inner.getDeviceTemp().getValueAsDouble();
         frontTemp = front.getDeviceTemp().getValueAsDouble();
         backTemp = back.getDeviceTemp().getValueAsDouble();
+        Dashboard.intakeTemps.set(new double[]{frontTemp, innerTemp, backTemp});
+        frontVelocity = front.getVelocity().getValueAsDouble() / 60;
+        innerVelocity = inner.getVelocity().getValueAsDouble() / 60;
+        backVelocity = back.getVelocity().getValueAsDouble() / 60;
+        Dashboard.intakeVelocities.set(new double[] {frontVelocity, innerVelocity, backVelocity});
+        indexerVelocity = indexEncoder.getVelocity() / 60;
+        Dashboard.indexerVelocity.set(indexerVelocity);
+        indexerTemp = indexer.getMotorTemperature();
+        Dashboard.indexerTemp.set(indexerTemp);
     }
 
-    public void updateIntake(XboxController driveController, boolean readyToShoot) {
+    public void updateIntake(XboxController driveController) {
         // Turns off intake and allow indexing when note is picked up
         if (bbBroken) {
             enabled = false;
@@ -67,7 +84,7 @@ public class Intake {
         }
         indexing = (driveController.getLeftTriggerAxis() > 0.7) ||
                 (enabled && (!bbBroken)) ||
-                (bbBroken && (driveController.getRightTriggerAxis() > 0.7) && readyToShoot);
+                (bbBroken && (driveController.getRightTriggerAxis() > 0.7) && Shooter.spunUp);
     }
 
     public void toggle() {
@@ -85,9 +102,10 @@ public class Intake {
     }
 
     public void updateOutputs() {
-        inner.set(ActuatorInterlocks.TAI_Motors("Center_Intake_(p)", (enabled) ? innerIntakePower : 0));
-        front.set(ActuatorInterlocks.TAI_Motors("Outer_Roller_Front_(p)", (enabled) ? outerIntakePower : 0));
-        back.set(ActuatorInterlocks.TAI_Motors("Outer_Roller_Back_(p)", (enabled) ? outerIntakePower : 0));
-        indexer.set(ActuatorInterlocks.TAI_Motors("Indexer_(p)", (indexing) ? indexerIntakePower : 0));
+        Dashboard.intaking.set(enabled);
+        ActuatorInterlocks.TAI_TalonFX_Power(inner, "Center_Intake_(p)", (enabled) ? innerIntakePower : 0);
+        ActuatorInterlocks.TAI_TalonFX_Power(front, "Outer_Roller_Front_(p)", (enabled) ? outerIntakePower : 0);
+        ActuatorInterlocks.TAI_TalonFX_Power(back, "Outer_Roller_Back_(p)", (enabled) ? outerIntakePower : 0);
+        ActuatorInterlocks.TAI_SparkMAX_Power(indexer, "Indexer_(p)", (indexing) ? indexerIntakePower : 0);
     }
 }

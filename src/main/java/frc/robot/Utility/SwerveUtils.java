@@ -2,99 +2,127 @@ package frc.robot.Utility;
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.XboxController;
 import frc.robot.Dashboard;
+import frc.robot.Drivetrain;
 import frc.robot.Robot;
 import frc.robot.Utility.ClassHelpers.DriverProfile;
 
 public class SwerveUtils {
-  static DriverProfile activeDriverProfile = new DriverProfile("", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 
+  static DriverProfile activeDriverProfile = new DriverProfile("", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+  private static double[][] highGearCalibration = FileHelpers.parseCSV("/home/lvuser/calibrations/DriveCalibrationHighGear.csv");
+  private static double[][] lowGearCalibration = FileHelpers.parseCSV("/home/lvuser/calibrations/DriveCalibrationLowGear.csv");
+  /**
+   * Reads in driver profile by accessing the calibration file matching the input
+   * profile
+   * and parses the file settings into a Driverprofile object
+   * 
+   * @param profile
+   * @return
+   */
   public static DriverProfile readDriverProfiles(String profile) {
+    // If driver profile was most recently checked, skip the rest of this function
     if (activeDriverProfile.profile.equals(profile)) {
       return activeDriverProfile;
     }
-    String file = FileHelpers.readFile("/home/lvuser/calibrations/" + profile);
-    String[] profileSetpoints = file.split("<Val>");
-    profileSetpoints[0] = "";
 
-    double[] outputArray = new double[6];
+    // Read in driver profile csv file and get the column containing the information (0)
+    double[] setpoints = ArrayHelpers.getColumn(FileHelpers.parseCSV("/home/lvuser/calibrations/" + profile), 0);
 
-    int i = 0;
-    for (String x : profileSetpoints) {
-      if (!x.equals("")) {
-        outputArray[i] = Double.parseDouble(x.substring(0, 12));
-        i += 1;
-      }
-    }
+    // Store the values in a DriverProfile object
+    DriverProfile output = new DriverProfile(profile, setpoints[0], setpoints[1], setpoints[2], setpoints[3],
+        setpoints[4], setpoints[5]);
 
-    DriverProfile output = new DriverProfile(profile, outputArray[0], outputArray[1], outputArray[2], outputArray[3],
-        outputArray[4], outputArray[5]);
     return output;
   }
 
-  public static TalonFXConfiguration[] swerveModuleConfigs() {
-    /*
-     * configs will be an array of TalonFX Configurations (4 total - 1 for each
-     * swerve module)
-     * 
-     * Note: you will see that we have disabled on the drive motors the following:
-     * - ForwardLimitEnable
-     * - ReverseLimitEnable
-     * This is because we have the shifters sensors connected to the motor
-     * controller input.
-     */
+  /**
+   * Creates an array of configurations for TalonFXs with the following changes
+   * from default:
+   * <ul>
+   * <li>Rotation directions are specified based on module position
+   * <li>Forward and reverse limits are disabled due to the shifter sensors being
+   * plugged into these ports in some versions
+   * <li>Neutral mode is set to brake so that the robot stops when prompted
+   * <li>Open and closed loop ramps are both 0.1 to get consistent acceleration
+   * decceleration without drawing too much current
+   * </ul>
+   * 
+   * Where element 0 matches module 0, element 1 matches module 1, etc...
+   * 
+   * @return
+   */
+  public static TalonFXConfiguration[] swerveModuleDriveConfigs() {
     TalonFXConfiguration[] configs = new TalonFXConfiguration[4];
 
-    /*
-     * Swerve Module Drive Motor Configs (Front Right)
-     * 
-     * Note: We need to set the motor output to be CCW (counter clockwise), becuase
-     * we have the bevel
-     * gears facing inwards.
-     */
+    // Front right
     configs[0] = new TalonFXConfiguration();
     configs[0].HardwareLimitSwitch.ForwardLimitEnable = false;
     configs[0].HardwareLimitSwitch.ReverseLimitEnable = false;
+    configs[0].MotorOutput.NeutralMode = NeutralModeValue.Brake;
+    configs[0].OpenLoopRamps.DutyCycleOpenLoopRampPeriod = 0.1;
+    configs[0].ClosedLoopRamps.DutyCycleClosedLoopRampPeriod = 0.1;
     configs[0].MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
 
-    /*
-     * Swerve Module Drive Motor Configs (Front Left)
-     * 
-     * Note: We need to set the motor output to be CW (clockwise), because we have
-     * the bevel gears facing
-     * inwards.
-     */
+    // Front Left
     configs[1] = new TalonFXConfiguration();
     configs[1].HardwareLimitSwitch.ForwardLimitEnable = false;
     configs[1].HardwareLimitSwitch.ReverseLimitEnable = false;
+    configs[1].MotorOutput.NeutralMode = NeutralModeValue.Brake;
+    configs[1].OpenLoopRamps.DutyCycleOpenLoopRampPeriod = 0.1;
+    configs[1].ClosedLoopRamps.DutyCycleClosedLoopRampPeriod = 0.1;
     configs[1].MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
 
-    /*
-     * Swerve Module Drive Motor Configs (Back Left)
-     * 
-     * Note: We need to set the motor output to be CW (clockwise), because we have
-     * the bevel gears facing
-     * inwards.
-     */
+    // Back left
     configs[2] = new TalonFXConfiguration();
     configs[2].HardwareLimitSwitch.ForwardLimitEnable = false;
     configs[2].HardwareLimitSwitch.ReverseLimitEnable = false;
+    configs[2].MotorOutput.NeutralMode = NeutralModeValue.Brake;
+    configs[2].OpenLoopRamps.DutyCycleOpenLoopRampPeriod = 0.1;
+    configs[2].ClosedLoopRamps.DutyCycleClosedLoopRampPeriod = 0.1;
     configs[2].MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
 
-    /*
-     * Swerve Module Drive Motor Configs (Back Right)
-     * 
-     * Note: We need to set the motor output to be CCW (counter clockwise), becuase
-     * we have the bevel
-     * gears facing inwards.
-     */
+    // Back right
     configs[3] = new TalonFXConfiguration();
     configs[3].HardwareLimitSwitch.ForwardLimitEnable = false;
     configs[3].HardwareLimitSwitch.ReverseLimitEnable = false;
+    configs[3].MotorOutput.NeutralMode = NeutralModeValue.Brake;
+    configs[3].OpenLoopRamps.DutyCycleOpenLoopRampPeriod = 0.1;
+    configs[3].ClosedLoopRamps.DutyCycleClosedLoopRampPeriod = 0.1;
     configs[3].MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
+
+    return configs;
+  }
+
+  /**
+   * Creates an array of configurations for TalonFXs with the following changes
+   * from default:
+   * <ul>
+   * <li>Rotation direction is set to Clockwise_Positive
+   * <li>Neutral mode is set to brake so that the robot stops when prompted
+   * <li>Open and closed loop ramps are both 0.1 to get consistent acceleration
+   * decceleration without drawing too much current
+   * </ul>
+   * 
+   * Where element 0 matches module 0, element 1 matches module 1, etc...
+   * 
+   * @return an array of azimuth configurations
+   */
+  public static TalonFXConfiguration[] swerveModuleAzimuthConfigs() {
+    TalonFXConfiguration[] configs = new TalonFXConfiguration[4];
+
+    for (int i = 0; i < 4; i++) {
+      configs[i] = new TalonFXConfiguration();
+      configs[i].MotorOutput.NeutralMode = NeutralModeValue.Brake;
+      configs[i].OpenLoopRamps.DutyCycleOpenLoopRampPeriod = 0.1;
+      configs[i].ClosedLoopRamps.DutyCycleClosedLoopRampPeriod = 0.1;
+      configs[i].MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+    }
 
     return configs;
   }
@@ -146,6 +174,15 @@ public class SwerveUtils {
         rawY / joystickSaturation * exponentialScalar * strafeMax };
   }
 
+  /**
+   * Scales and caps raw right joystick output based on current selected driver
+   * profile
+   * settings
+   * 
+   * @param driverController
+   * @param isAutonomous
+   * @return Scaled rotate joystick command
+   */
   public static double swerveScaleRotate(XboxController driverController, boolean isAutonomous) {
     String profile = Robot.legalDrivers[(int) Dashboard.selectedDriver.get(0.0)];
     DriverProfile currentProfile = SwerveUtils.readDriverProfiles(profile);
@@ -168,6 +205,14 @@ public class SwerveUtils {
     return joysticks;
   }
 
+  /**
+   * Adjusts the orientation of the joystick outputs to be field oriented instead
+   * of robot oriented
+   * 
+   * @param joysticks
+   * @param heading
+   * @return 1d double array of joystick values for x and y outputs
+   */
   public static double[] fieldOrientedTransform(double[] joysticks, double heading) {
     double[] output = new double[] { 0.0, 0.0 };
     double x = joysticks[0];
@@ -179,5 +224,37 @@ public class SwerveUtils {
     output[1] = (y * cos) - (x * sin);
 
     return output;
+  }
+
+  /**
+   * Converts regular drive command based on joystick outputs to a power output
+   * for the motor based on high and low gear calibrations
+   * 
+   * @param moduleState
+   * @param shifterValue Real value of the shifter for this module
+   * @return Power output for DutyCycle command
+   */
+  public static double driveCommandToPower(SwerveModuleState moduleState, boolean shifterValue) {
+    return Math.signum(moduleState.speedMetersPerSecond) * Control.interpolateCSV(
+        Math.abs(moduleState.speedMetersPerSecond) * (Drivetrain.maxGroundSpeed / (Drivetrain.actualWheelDiameter / 3)),
+        (shifterValue) ? highGearCalibration : lowGearCalibration);
+  }
+
+
+
+  /**
+   * Updates file at currentprofile.csv to include new profile setpoints
+   * @param newDriverProfileSetpoints new points to write to the csv profile
+   */
+  public static void updateDriverProfile(double[] newDriverProfileSetpoints) {
+    // Create content to write to Profile.csv
+    String outputString = "StrafeDeadband,StrafeScaling,StrafeMax,RotateDeadband,RotateScaling,RotateMax\n";
+    for (int i = 0; i<5; i++) {
+      outputString += String.valueOf(newDriverProfileSetpoints[i]) + ",";
+    }
+    outputString += String.valueOf(newDriverProfileSetpoints[5]);
+
+    // Write out content to Profile.csv
+    FileHelpers.writeFile("/home/lvuser/calibrations/" + Dashboard.selectedDriver.get() + ".csv", outputString);
   }
 }
