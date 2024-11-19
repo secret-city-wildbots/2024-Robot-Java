@@ -31,8 +31,6 @@ public class Dashboard {
     public static DoubleArrayPublisher intakeVelocities;
     public static DoubleArrayPublisher currentDriverProfileSetpoints;
     public static BooleanArrayPublisher confirmedMasterStates;
-    
-
 
     // Publishers
     public static StringPublisher robotProfile;
@@ -47,7 +45,6 @@ public class Dashboard {
     public static IntegerPublisher shooterState;
     public static BooleanPublisher beambreak;
     public static BooleanPublisher isAutonomous;
-    
 
     // Shooter subsystem
     public static DoubleArrayPublisher shooterVelocities;
@@ -69,68 +66,64 @@ public class Dashboard {
     public static BooleanSubscriber unlockWrist;
     public static BooleanSubscriber applyProfileSetpoints;
     public static BooleanSubscriber homeWheels;
-    
-
-    
-
 
     /**
      * Creates an object for storing dashboard publishers and subscribers
      */
-    public Dashboard(){
+    public Dashboard() {
         NetworkTableInstance inst = NetworkTableInstance.getDefault();
         NetworkTable table = inst.getTable("SmartDashboard");
 
         // Drivebase subsystem
-            swerve0Details = table.getDoubleArrayTopic("Swerve_0_Details").publish();
-            swerve1Details = table.getDoubleArrayTopic("Swerve_1_Details").publish();
-            swerve2Details = table.getDoubleArrayTopic("Swerve_2_Details").publish();
-            swerve3Details = table.getDoubleArrayTopic("Swerve_3_Details").publish();
-            currentDriverProfileSetpoints = table.getDoubleArrayTopic("Current_Driver_Profile_Setpoints").publish();
-            legalDrivers = table.getStringArrayTopic("Legal_Drivers").publish();
-            newDriverProfileSetpoints = table.getDoubleArrayTopic("New_Driver_Profile_Setpoints").subscribe(new double[]{0.08, 1.8, 1, 0.15, 2.5, 1});
-            
-            selectedDriver = table.getDoubleTopic("Selected_Driver").subscribe(0.0);
-            unlockAzimuth = table.getBooleanTopic("Unlock_Azimuth").subscribe(false);
-            homeWheels = table.getBooleanTopic("Home_Wheels").subscribe(false);
-            applyProfileSetpoints = table.getBooleanTopic("Apply_Driver_Profile_Setpoints").subscribe(false);
+        swerve0Details = table.getDoubleArrayTopic("Swerve_0_Details").publish();
+        swerve1Details = table.getDoubleArrayTopic("Swerve_1_Details").publish();
+        swerve2Details = table.getDoubleArrayTopic("Swerve_2_Details").publish();
+        swerve3Details = table.getDoubleArrayTopic("Swerve_3_Details").publish();
+        currentDriverProfileSetpoints = table.getDoubleArrayTopic("Current_Driver_Profile_Setpoints").publish();
+        legalDrivers = table.getStringArrayTopic("Legal_Drivers").publish();
+        newDriverProfileSetpoints = table.getDoubleArrayTopic("New_Driver_Profile_Setpoints")
+                .subscribe(new double[] { 0.08, 1.8, 1, 0.15, 2.5, 1 });
+
+        selectedDriver = table.getDoubleTopic("Selected_Driver").subscribe(0.0);
+        unlockAzimuth = table.getBooleanTopic("Unlock_Azimuth").subscribe(false);
+        homeWheels = table.getBooleanTopic("Home_Wheels").subscribe(false);
+        applyProfileSetpoints = table.getBooleanTopic("Apply_Driver_Profile_Setpoints").subscribe(false);
 
         // Shooter subsystem
-            shooterVelocities = table.getDoubleArrayTopic("Shooter_Velocities (rpm)").publish();
-            shooterTemps = table.getDoubleArrayTopic("Shooter_Temps (C)").publish();
+        shooterVelocities = table.getDoubleArrayTopic("Shooter_Velocities (rpm)").publish();
+        shooterTemps = table.getDoubleArrayTopic("Shooter_Temps (C)").publish();
 
-            wristPosition = table.getDoubleTopic("Wrist_Position (deg)").publish();
-            wristTemp = table.getDoubleTopic("Wrist_Temp (C)").publish();
-            shooterState = table.getIntegerTopic("Shooter_States").publish();
-            unlockWrist = table.getBooleanTopic("Unlock_Wrist").subscribe(false);
-        
+        wristPosition = table.getDoubleTopic("Wrist_Position (deg)").publish();
+        wristTemp = table.getDoubleTopic("Wrist_Temp (C)").publish();
+        shooterState = table.getIntegerTopic("Shooter_States").publish();
+        unlockWrist = table.getBooleanTopic("Unlock_Wrist").subscribe(false);
+
         // Intake subsystem
-            intakeTemps = table.getDoubleArrayTopic("Intake_Temps (C)").publish();
-            intakeVelocities = table.getDoubleArrayTopic("Intake_Velocities (C)").publish();
-            indexerVelocity = table.getDoubleTopic("Indexer_Velocity (rpm)").publish();
-            indexerTemp = table.getDoubleTopic("Indexer_Temp (C)").publish();
-            intaking = table.getBooleanTopic("Intaking").publish();
-            beambreak = table.getBooleanTopic("Beambreak").publish();
-            
+        intakeTemps = table.getDoubleArrayTopic("Intake_Temps (C)").publish();
+        intakeVelocities = table.getDoubleArrayTopic("Intake_Velocities (C)").publish();
+        indexerVelocity = table.getDoubleTopic("Indexer_Velocity (rpm)").publish();
+        indexerTemp = table.getDoubleTopic("Indexer_Temp (C)").publish();
+        intaking = table.getBooleanTopic("Intaking").publish();
+        beambreak = table.getBooleanTopic("Beambreak").publish();
 
         // Elevator Subsystem
-            elevatorPosition = table.getDoubleTopic("Elevator_Position (in)").publish();
-            elevatorTemp = table.getDoubleTopic("Elevator_Temp (C)").publish();
-            unlockElevator = table.getBooleanTopic("Unlock_Elevator").subscribe(false);
+        elevatorPosition = table.getDoubleTopic("Elevator_Position (in)").publish();
+        elevatorTemp = table.getDoubleTopic("Elevator_Temp (C)").publish();
+        unlockElevator = table.getBooleanTopic("Unlock_Elevator").subscribe(false);
 
         // Other testing
-            legalActuatorNames = table.getStringArrayTopic("Legal_Actuator_Names").publish();
-            confirmedMasterStates = table.getBooleanArrayTopic("Confirmed_States").publish();
+        legalActuatorNames = table.getStringArrayTopic("Legal_Actuator_Names").publish();
+        confirmedMasterStates = table.getBooleanArrayTopic("Confirmed_States").publish();
 
-            robotProfile = table.getStringTopic("Robot_Profile").publish();
-            codeVersion = table.getStringTopic("Robot_Code_Version").publish();
-            pressureTransducer = table.getDoubleTopic("Pressure_Transducer").publish();
-            loopTime = table.getDoubleTopic("Control_Loop_Time").publish();
-            isAutonomous = table.getBooleanTopic("Robot_is_Autonomous").publish();
-            testActuatorName = table.getStringTopic("Test_Actuator_Name").subscribe("");
-            testActuatorValue = table.getDoubleTopic("Test_Actuator_Value").subscribe(0.0);
-            testActuatorPeriod = table.getDoubleTopic("Test_Actuator_Period").subscribe(0.0);
-            freeTuningVariable = table.getDoubleTopic("Free_Tuning_Variable").subscribe(0);       
-        
+        robotProfile = table.getStringTopic("Robot_Profile").publish();
+        codeVersion = table.getStringTopic("Robot_Code_Version").publish();
+        pressureTransducer = table.getDoubleTopic("Pressure_Transducer").publish();
+        loopTime = table.getDoubleTopic("Control_Loop_Time").publish();
+        isAutonomous = table.getBooleanTopic("Robot_is_Autonomous").publish();
+        testActuatorName = table.getStringTopic("Test_Actuator_Name").subscribe("");
+        testActuatorValue = table.getDoubleTopic("Test_Actuator_Value").subscribe(0.0);
+        testActuatorPeriod = table.getDoubleTopic("Test_Actuator_Period").subscribe(0.0);
+        freeTuningVariable = table.getDoubleTopic("Free_Tuning_Variable").subscribe(0);
+
     }
 }

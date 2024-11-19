@@ -160,7 +160,7 @@ public class Drivetrain {
    */
   public void drive(XboxController driverController, boolean isAutonomous, double period) {
     if (Dashboard.applyProfileSetpoints.get()) {
-      double[] setpoints =Dashboard.newDriverProfileSetpoints.get();
+      double[] setpoints = Dashboard.newDriverProfileSetpoints.get();
       SwerveUtils.updateDriverProfile(setpoints);
       Dashboard.currentDriverProfileSetpoints.set(setpoints);
     }
@@ -202,25 +202,25 @@ public class Drivetrain {
         moduleStates[0].angle.getDegrees(),
         module0.getTemp(),
         moduleStates[0].speedMetersPerSecond,
-        (module0.shifter.get() == Value.kForward) ? 1:0
+        (module0.shifter.get() == Value.kForward) ? 1 : 0
     });
     Dashboard.swerve1Details.set(new double[] {
         moduleStates[1].angle.getDegrees(),
         module1.getTemp(),
         moduleStates[1].speedMetersPerSecond,
-        (module1.shifter.get() == Value.kForward) ? 1:0
+        (module1.shifter.get() == Value.kForward) ? 1 : 0
     });
     Dashboard.swerve2Details.set(new double[] {
         moduleStates[2].angle.getDegrees(),
         module2.getTemp(),
         moduleStates[2].speedMetersPerSecond,
-        (module2.shifter.get() == Value.kForward) ? 1:0
+        (module2.shifter.get() == Value.kForward) ? 1 : 0
     });
     Dashboard.swerve3Details.set(new double[] {
         moduleStates[3].angle.getDegrees(),
         module3.getTemp(),
         moduleStates[3].speedMetersPerSecond,
-        (module3.shifter.get() == Value.kForward) ? 1:0
+        (module3.shifter.get() == Value.kForward) ? 1 : 0
     });
   }
 

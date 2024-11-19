@@ -2,10 +2,10 @@ package frc.robot.Utility;
 
 public class Control {
 
-
-
     /**
-     * Linearly interpolates a value in a double array where the first column matches value and the second matches the return value
+     * Linearly interpolates a value in a double array where the first column
+     * matches value and the second matches the return value
+     * 
      * @param value value to interpolate
      * @param array array of points ususally read from a csv file
      * @return Interpolated output
@@ -31,12 +31,12 @@ public class Control {
         }
     }
 
-    
     /**
      * Forces a value between a minimum and a maximum such that min <= input <= max
+     * 
      * @param input the value to restrict
-     * @param min the lower bound
-     * @param max the upper bound
+     * @param min   the lower bound
+     * @param max   the upper bound
      * @return The input restricted between the min and max
      */
     public static double clamp(double input, double min, double max) {

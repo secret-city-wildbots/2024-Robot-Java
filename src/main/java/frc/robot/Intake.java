@@ -60,11 +60,11 @@ public class Intake {
         innerTemp = inner.getDeviceTemp().getValueAsDouble();
         frontTemp = front.getDeviceTemp().getValueAsDouble();
         backTemp = back.getDeviceTemp().getValueAsDouble();
-        Dashboard.intakeTemps.set(new double[]{frontTemp, innerTemp, backTemp});
+        Dashboard.intakeTemps.set(new double[] { frontTemp, innerTemp, backTemp });
         frontVelocity = front.getVelocity().getValueAsDouble() / 60;
         innerVelocity = inner.getVelocity().getValueAsDouble() / 60;
         backVelocity = back.getVelocity().getValueAsDouble() / 60;
-        Dashboard.intakeVelocities.set(new double[] {frontVelocity, innerVelocity, backVelocity});
+        Dashboard.intakeVelocities.set(new double[] { frontVelocity, innerVelocity, backVelocity });
         indexerVelocity = indexEncoder.getVelocity() / 60;
         Dashboard.indexerVelocity.set(indexerVelocity);
         indexerTemp = indexer.getMotorTemperature();

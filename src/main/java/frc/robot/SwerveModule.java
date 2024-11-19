@@ -123,7 +123,9 @@ public class SwerveModule {
                     (azimuthTalon.getRotorPosition().getValueAsDouble() / azimuthRatio) * 2 * Math.PI);
         }
         return new SwerveModulePosition(
-                (drive.getRotorPosition().getValueAsDouble() / ((shifter.get() == Value.kForward) ? driveHighGearRatio : driveLowGearRatio)) * (2 * Math.PI * kWheelRadius),
+                (drive.getRotorPosition().getValueAsDouble()
+                        / ((shifter.get() == Value.kForward) ? driveHighGearRatio : driveLowGearRatio))
+                        * (2 * Math.PI * kWheelRadius),
                 rotation);
     }
 

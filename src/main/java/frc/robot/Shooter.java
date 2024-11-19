@@ -75,7 +75,7 @@ public class Shooter {
             default:
                 wristRatio = 98;
         }
-        
+
         shooterPower = shootPower;
         shooterRatio = shooterWheelRatio;
 
@@ -101,10 +101,10 @@ public class Shooter {
     public void updateSensors() {
         rightTemp = right.getDeviceTemp().getValueAsDouble();
         leftTemp = left.getDeviceTemp().getValueAsDouble();
-        Dashboard.shooterTemps.set(new double[]{leftTemp, rightTemp});
+        Dashboard.shooterTemps.set(new double[] { leftTemp, rightTemp });
         rightVelocity = right.getRotorVelocity().getValueAsDouble() * 60;
         leftVelocity = left.getRotorVelocity().getValueAsDouble() * 60;
-        Dashboard.shooterVelocities.set(new double[]{leftVelocity, rightVelocity});
+        Dashboard.shooterVelocities.set(new double[] { leftVelocity, rightVelocity });
         wristStowed = wrist.getReverseLimit().getValue() == ReverseLimitValue.ClosedToGround;
         wristAngle = wrist.getRotorPosition().getValueAsDouble() / 2048 * 360 / wristRatio; // ticks -> degrees
         Dashboard.wristPosition.set(wristAngle);
@@ -190,7 +190,7 @@ public class Shooter {
 
         // Put Wrist in coast while unlocked and only when changed
         boolean unlockWrist = Dashboard.unlockWrist.get();
-        if (unlockWrist!=unlockWrist0) {
+        if (unlockWrist != unlockWrist0) {
             if (unlockWrist) {
                 wrist.setNeutralMode(NeutralModeValue.Coast);
             } else {

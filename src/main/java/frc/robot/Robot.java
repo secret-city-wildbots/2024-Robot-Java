@@ -53,6 +53,11 @@ public class Robot extends TimedRobot {
   public static final String[] legalDrivers = { "Devin", "Reed", "Driver 3", "Driver 4", "Driver 5", "Programmers",
       "Kidz" };
 
+
+
+  /**
+   * This is called when the robot is initalized
+   */
   public Robot() {
     Dashboard.legalActuatorNames.set(actuatorNames);
     Dashboard.legalDrivers.set(legalDrivers);
@@ -64,6 +69,11 @@ public class Robot extends TimedRobot {
     Dashboard.codeVersion.set(codeVersion);
   }
 
+
+
+  /**
+   * This is called on every loop cycle
+   */
   @Override
   public void robotPeriodic() {
     boolean[] confirmedStates = new boolean[5];
@@ -72,16 +82,31 @@ public class Robot extends TimedRobot {
     Dashboard.isAutonomous.set(isAutonomous());
   }
 
+
+
+  /**
+   * This is called every loop cycle while the robot is disabled
+   */
   @Override
   public void disabledPeriodic() {
     Dashboard.loopTime.set(getPeriod());
   }
 
+
+
+  /**
+   * This is called every loop cycle while the robot is enabled in autonomous mode
+   */
   @Override
   public void autonomousPeriodic() {
     drivetrain.updateOdometry();
   }
 
+
+
+  /**
+   * This is called every loop cycle while the robot is enabled in TeleOp mode
+   */
   @Override
   public void teleopPeriodic() {
     // Enable compressor
@@ -106,15 +131,24 @@ public class Robot extends TimedRobot {
     shooter.updateShooter(driverController.getRightTriggerAxis() > 0.2,
         driverController.getLeftTriggerAxis() > 0.7, robotPosition, Intake.bbBroken);
 
+    // Adjust elevator goal output based on master state
     elevator.updateElevator();
 
+    // Adjust LED color settings based on mode using driver controller
     led.updateLED(driverController, isAutonomous());
 
+    // Update outputs for everything
+    // This includes all motors, pistons, and other things
     updateOutputs();
 
+    // Dashboard reporting
     Dashboard.loopTime.set(getPeriod());
   }
 
+  
+  /**
+   * 
+   */
   private void getSensors() {
     intake.updateSensors();
     shooter.updateSensors();
@@ -122,6 +156,11 @@ public class Robot extends TimedRobot {
     Dashboard.pressureTransducer.set(compressor.getPressure());
   }
 
+
+
+  /**
+   * 
+   */
   private void updateOutputs() {
     intake.updateOutputs();
     shooter.updateOutputs();
@@ -130,6 +169,11 @@ public class Robot extends TimedRobot {
     led.updateOutputs();
   }
 
+
+
+  /**
+   * 
+   */
   public void updateMasterState() {
     /*
      * Change master states to match these manip inputs:

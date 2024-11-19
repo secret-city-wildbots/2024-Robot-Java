@@ -2,8 +2,6 @@ package frc.robot.Utility;
 
 public class ArrayHelpers {
 
-
-    
     /**
      * Gets the column in a 2d array at array[...][index]
      * 
@@ -11,10 +9,10 @@ public class ArrayHelpers {
      * @param index The index of the column
      * @return The 1d array containing each element from the chosen column
      */
-    public static double[] getColumn(double[][] array, int index){
+    public static double[] getColumn(double[][] array, int index) {
         double[] column = new double[array[index].length];
-        for(int i=0; i<column.length; i++){
-           column[i] = array[i][index];
+        for (int i = 0; i < column.length; i++) {
+            column[i] = array[i][index];
         }
         return column;
     }

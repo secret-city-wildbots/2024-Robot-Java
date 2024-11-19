@@ -4,10 +4,10 @@ public class Latch {
     boolean defaultBool;
     boolean latchedBool;
 
-
-
     /**
-     * Constantly updates a boolean value and stores it upon recieving a latch signal and stops storing it upon recieving a reset signal
+     * Constantly updates a boolean value and stores it upon recieving a latch
+     * signal and stops storing it upon recieving a reset signal
+     * 
      * @param defaultValue True or False
      */
     public Latch(boolean defaultValue) {
@@ -16,7 +16,7 @@ public class Latch {
     }
 
     public boolean updateLatch(boolean latchValue, boolean defaultValue, boolean latchSignal, boolean reset) {
-        latchedBool = (reset) ? defaultValue : (latchSignal) ? latchValue:latchedBool;
+        latchedBool = (reset) ? defaultValue : (latchSignal) ? latchValue : latchedBool;
         return latchedBool;
     }
 
@@ -24,7 +24,9 @@ public class Latch {
     double latchedDbl;
 
     /**
-     * Constantly updates a double value and stores it upon recieving a latch signal and stops storing it upon recieving a reset signal
+     * Constantly updates a double value and stores it upon recieving a latch signal
+     * and stops storing it upon recieving a reset signal
+     * 
      * @param defaultValue Double
      */
     public Latch(double defaultValue) {
@@ -33,7 +35,7 @@ public class Latch {
     }
 
     public double updateLatch(double latchValue, double defaultValue, boolean latchSignal, boolean reset) {
-        latchedDbl = (reset) ? defaultValue : (latchSignal) ? latchValue:latchedDbl;
+        latchedDbl = (reset) ? defaultValue : (latchSignal) ? latchValue : latchedDbl;
         return latchedDbl;
     }
 }

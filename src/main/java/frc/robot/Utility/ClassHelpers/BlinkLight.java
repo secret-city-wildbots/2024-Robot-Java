@@ -8,8 +8,10 @@ public class BlinkLight {
         this.period = period;
         this.time = new Timer();
     }
+
     /**
      * Returns a periodically toggled true or false where the period is period
+     * 
      * @param period How frequently to switch between true and false
      * @return
      */

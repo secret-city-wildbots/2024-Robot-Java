@@ -45,7 +45,6 @@ public class Elevator {
             default:
                 elevatorRatio = 7.72;
         }
-        
 
         elevatorConfig.Slot0.kP = elevatorController.getP();
         elevatorConfig.Slot0.kI = elevatorController.getI();
@@ -61,7 +60,7 @@ public class Elevator {
         elevatorFeedForward = 32.17 * 20 * elevatorArbitraryFFScalar;
     }
 
-    public void updateSensors() {     
+    public void updateSensors() {
         height = elevator.getPosition().getValueAsDouble() / elevatorRatio;
         Dashboard.elevatorPosition.set(height);
         motorTemp = elevator.getDeviceTemp().getValueAsDouble();
@@ -98,7 +97,7 @@ public class Elevator {
 
         // Put elevator in coast while unlocked and only when changed
         boolean unlockElevator = Dashboard.unlockElevator.get();
-        if (unlockElevator!=unlockElevator0) {
+        if (unlockElevator != unlockElevator0) {
             if (unlockElevator) {
                 elevator.setNeutralMode(NeutralModeValue.Coast);
             } else {
