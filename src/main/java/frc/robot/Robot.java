@@ -130,10 +130,6 @@ public class Robot extends TimedRobot {
     led.updateOutputs();
   }
 
-  @Override
-  public void testPeriodic() {
-  }
-
   public void updateMasterState() {
     /*
      * Change master states to match these manip inputs:
