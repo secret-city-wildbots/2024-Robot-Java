@@ -12,6 +12,7 @@ import com.ctre.phoenix6.signals.ReverseLimitValue;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Shooter {
@@ -33,6 +34,7 @@ public class Shooter {
 
     public double rightTemp = -1;
     public double leftTemp = -1;
+    public double wristTemp = -1;
     public double rightVelocity = -1;
     public double leftVelocity = -1;
     public double wristAngle = -1;
@@ -56,6 +58,8 @@ public class Shooter {
     private PIDController wristController = new PIDController(0, 0, 0);
 
     private final double wristRatio;
+
+    private boolean unlockWrist0 = false;
 
     public Shooter(
             double shootPower,
@@ -97,10 +101,15 @@ public class Shooter {
     public void updateSensors() {
         rightTemp = right.getDeviceTemp().getValueAsDouble();
         leftTemp = left.getDeviceTemp().getValueAsDouble();
+        Dashboard.shooterTemps.set(new double[]{leftTemp, rightTemp});
         rightVelocity = right.getRotorVelocity().getValueAsDouble() * 60;
         leftVelocity = left.getRotorVelocity().getValueAsDouble() * 60;
+        Dashboard.shooterVelocities.set(new double[]{leftVelocity, rightVelocity});
         wristStowed = wrist.getReverseLimit().getValue() == ReverseLimitValue.ClosedToGround;
         wristAngle = wrist.getRotorPosition().getValueAsDouble() / 2048 * 360 / wristRatio; // ticks -> degrees
+        Dashboard.wristPosition.set(wristAngle);
+        wristTemp = wrist.getDeviceTemp().getValueAsDouble();
+        Dashboard.wristTemp.set(wristTemp);
         if ((rightVelocity > (0.8 * shooterPower) * 6000)
                 && (leftVelocity > (0.8 * shooterPower * shooterRatio) * 6000)) {
             spunUp = true;
@@ -113,13 +122,23 @@ public class Shooter {
         SmartDashboard.putNumber("Wrist FF Output", wristFeedForward);
     }
 
-    public void updateWrist(Pose2d robotPosition) {
+    public void updateWrist(Pose2d robotPosition, XboxController manipController) {
+        if (manipController.getYButtonPressed()) {
+            state = ShooterStates.TACO;
+        } else if (manipController.getXButtonPressed()) {
+            state = ShooterStates.SUB;
+        } else if (manipController.getAButtonPressed()) {
+            state = ShooterStates.LOB;
+        }
+
+        Dashboard.shooterState.set(state.ordinal());
+
         switch (Robot.masterState) {
             case STOWED:
                 wristOutput = 0; // degrees
                 break;
             case SHOOTING:
-                switch (Shooter.state) {
+                switch (state) {
                     case SUB:
                         wristOutput = 0;
                         break;
@@ -168,5 +187,16 @@ public class Shooter {
         ActuatorInterlocks.TAI_TalonFX_Power(right, "Shooter_Right_(p)", (spin) ? shooterPower : 0);
         ActuatorInterlocks.TAI_TalonFX_Power(left, "Shooter_Left_(p)", (spin) ? shooterPower * shooterRatio : 0);
         ActuatorInterlocks.TAI_TalonFX_Position(wrist, "Wrist_(p)", wristOutput / 360);
+
+        // Put Wrist in coast while unlocked and only when changed
+        boolean unlockWrist = Dashboard.unlockWrist.get();
+        if (unlockWrist!=unlockWrist0) {
+            if (unlockWrist) {
+                wrist.setNeutralMode(NeutralModeValue.Coast);
+            } else {
+                wrist.setNeutralMode(NeutralModeValue.Brake);
+            }
+        }
+        unlockWrist0 = unlockWrist;
     }
 }

@@ -154,7 +154,7 @@ public class SwerveModule {
      * @param isAutonomous
      */
     public void updateOutputs(SwerveModuleState moduleState, boolean isAutonomous, boolean fLow,
-            boolean moduleFailure) {
+            boolean moduleFailure, boolean homeWheels) {
         // Decide shifter output
         if (fLow) {
             shifterOutput0 = false;
@@ -182,14 +182,15 @@ public class SwerveModule {
                 fLow);
 
         // Output to azimuth
+        double normalAzimuthOutput = (homeWheels) ? 0 : moduleState.angle.getRotations() * azimuthRatio;
         if (azimuthSparkActive) {
             ActuatorInterlocks.TAI_SparkMAX_Position(azimuthSpark, azimuthPidController,
                     "Azimuth_" + ((Integer) moduleNumber).toString() + "_(p)",
-                    moduleState.angle.getRotations() * azimuthRatio);
+                    normalAzimuthOutput);
         } else {
             ActuatorInterlocks.TAI_TalonFX_Position(azimuthTalon,
                     "Azimuth_" + ((Integer) moduleNumber).toString() + "_(p)",
-                    moduleState.angle.getRotations() * azimuthRatio);
+                    normalAzimuthOutput);
         }
 
         // Decide whether to put azimuth in coast mode

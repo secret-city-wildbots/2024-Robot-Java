@@ -5,6 +5,7 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionDutyCycle;
 import com.ctre.phoenix6.hardware.TalonFX;
 //import com.ctre.phoenix6.signals.ReverseLimitValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
 
 import edu.wpi.first.math.controller.PIDController;
 import frc.robot.Utility.ActuatorInterlocks;
@@ -14,6 +15,7 @@ public class Elevator {
     public static boolean climbed = false;
 
     private double height = 0;
+    private double motorTemp = 0;
 
     private final TalonFX elevator = new TalonFX(17, "rio");
     private TalonFXConfiguration elevatorConfig = new TalonFXConfiguration();
@@ -29,6 +31,8 @@ public class Elevator {
     private MotionMagicConfigs motionMagicConfigs = elevatorConfig.MotionMagic;
 
     private final PositionDutyCycle elevatorControlRequest = new PositionDutyCycle(0).withSlot(0);
+
+    private boolean unlockElevator0 = false;
 
     public Elevator() {
         switch (Robot.robotProfile) {
@@ -59,6 +63,9 @@ public class Elevator {
 
     public void updateSensors() {     
         height = elevator.getPosition().getValueAsDouble() / elevatorRatio;
+        Dashboard.elevatorPosition.set(height);
+        motorTemp = elevator.getDeviceTemp().getValueAsDouble();
+        Dashboard.elevatorTemp.set(motorTemp);
         climbed = Math.abs(height - elevatorOutput) < allowedError;
     }
 
@@ -88,5 +95,16 @@ public class Elevator {
         } else {
             ActuatorInterlocks.TAI_TalonFX_Power(elevator, "Elevator_(p)", 0.0);
         }
+
+        // Put elevator in coast while unlocked and only when changed
+        boolean unlockElevator = Dashboard.unlockElevator.get();
+        if (unlockElevator!=unlockElevator0) {
+            if (unlockElevator) {
+                elevator.setNeutralMode(NeutralModeValue.Coast);
+            } else {
+                elevator.setNeutralMode(NeutralModeValue.Brake);
+            }
+        }
+        unlockElevator0 = unlockElevator;
     }
 }

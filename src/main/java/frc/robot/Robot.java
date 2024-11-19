@@ -12,6 +12,11 @@ import frc.robot.Utility.FileHelpers;
 import edu.wpi.first.math.geometry.Pose2d;
 
 public class Robot extends TimedRobot {
+
+
+  private final String codeVersion = "2024-Robot-Java 1.0_dev";
+
+
   public static enum MasterStates {
     STOWED,
     SHOOTING,
@@ -55,15 +60,21 @@ public class Robot extends TimedRobot {
       robotLength = 19;
       robotWidth = 23;
     }
+    Dashboard.robotProfile.set(robotProfile);
+    Dashboard.codeVersion.set(codeVersion);
   }
 
   @Override
   public void robotPeriodic() {
+    boolean[] confirmedStates = new boolean[5];
+    confirmedStates[masterState.ordinal()] = true;
+    Dashboard.confirmedMasterStates.set(confirmedStates);
+    Dashboard.isAutonomous.set(isAutonomous());
   }
 
   @Override
   public void disabledPeriodic() {
-
+    Dashboard.loopTime.set(getPeriod());
   }
 
   @Override
@@ -77,7 +88,7 @@ public class Robot extends TimedRobot {
     compressor.enableAnalog(100, 120);
 
     // Start by updating all sensor values
-    getHighPrioritySensors();
+    getSensors();
 
     // Check for any drive updates and drive accordingly
     Pose2d robotPosition = drivetrain.updateOdometry().getPoseMeters();
@@ -91,7 +102,7 @@ public class Robot extends TimedRobot {
 
     // Automatically adjust wrist and shooter based off of master state and
     // controller inputs
-    shooter.updateWrist(robotPosition);
+    shooter.updateWrist(robotPosition, manipController);
     shooter.updateShooter(driverController.getRightTriggerAxis() > 0.2,
         driverController.getLeftTriggerAxis() > 0.7, robotPosition, Intake.bbBroken);
 
@@ -100,12 +111,15 @@ public class Robot extends TimedRobot {
     led.updateLED(driverController, isAutonomous());
 
     updateOutputs();
+
+    Dashboard.loopTime.set(getPeriod());
   }
 
-  private void getHighPrioritySensors() {
+  private void getSensors() {
     intake.updateSensors();
     shooter.updateSensors();
     elevator.updateSensors();
+    Dashboard.pressureTransducer.set(compressor.getPressure());
   }
 
   private void updateOutputs() {

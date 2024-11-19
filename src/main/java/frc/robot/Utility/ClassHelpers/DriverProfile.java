@@ -51,4 +51,8 @@ public class DriverProfile {
       this.rotateMax = rotateMax;
       return this;
     }
+
+    public double[] toDoubleArray() {
+      return new double[]{strafeDeadband, strafeScaling, strafeMax, rotateDeadband, rotateScaling, rotateMax};
+    }
   }

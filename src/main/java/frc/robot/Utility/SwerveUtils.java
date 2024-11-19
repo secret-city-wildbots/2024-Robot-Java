@@ -31,27 +31,12 @@ public class SwerveUtils {
       return activeDriverProfile;
     }
 
-    // Read in driver profile xml file, split into sections, and remove the inital
-    // setup before the first <Val> tag
-    String file = FileHelpers.readFile("/home/lvuser/calibrations/" + profile);
-    String[] profileSetpoints = file.split("<Val>");
-    profileSetpoints[0] = "";
-
-    // For each non "" element of the array, parse in the value shown in the first
-    // 13 characters of the substring
-    double[] outputArray = new double[6];
-
-    int i = 0;
-    for (String x : profileSetpoints) {
-      if (!x.equals("")) {
-        outputArray[i] = Double.parseDouble(x.substring(0, 12));
-        i += 1;
-      }
-    }
+    // Read in driver profile csv file and get the column containing the information (0)
+    double[] setpoints = ArrayHelpers.getColumn(FileHelpers.parseCSV("/home/lvuser/calibrations/" + profile), 0);
 
     // Store the values in a DriverProfile object
-    DriverProfile output = new DriverProfile(profile, outputArray[0], outputArray[1], outputArray[2], outputArray[3],
-        outputArray[4], outputArray[5]);
+    DriverProfile output = new DriverProfile(profile, setpoints[0], setpoints[1], setpoints[2], setpoints[3],
+        setpoints[4], setpoints[5]);
 
     return output;
   }
@@ -253,5 +238,23 @@ public class SwerveUtils {
     return Math.signum(moduleState.speedMetersPerSecond) * Control.interpolateCSV(
         Math.abs(moduleState.speedMetersPerSecond) * (Drivetrain.maxGroundSpeed / (Drivetrain.actualWheelDiameter / 3)),
         (shifterValue) ? highGearCalibration : lowGearCalibration);
+  }
+
+
+
+  /**
+   * Updates file at currentprofile.csv to include new profile setpoints
+   * @param newDriverProfileSetpoints new points to write to the csv profile
+   */
+  public static void updateDriverProfile(double[] newDriverProfileSetpoints) {
+    // Create content to write to Profile.csv
+    String outputString = "StrafeDeadband,StrafeScaling,StrafeMax,RotateDeadband,RotateScaling,RotateMax\n";
+    for (int i = 0; i<5; i++) {
+      outputString += String.valueOf(newDriverProfileSetpoints[i]) + ",";
+    }
+    outputString += String.valueOf(newDriverProfileSetpoints[5]);
+
+    // Write out content to Profile.csv
+    FileHelpers.writeFile("/home/lvuser/calibrations/" + Dashboard.selectedDriver.get() + ".csv", outputString);
   }
 }
