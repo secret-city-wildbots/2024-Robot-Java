@@ -41,7 +41,7 @@ public class Robot extends TimedRobot {
   public static final String robotProfile = FileHelpers.readFile("/home/lvuser/calibrations/RobotProfile.txt");
 
   @SuppressWarnings("unused")
-  private final Dashboard m_Dashboard = new Dashboard();
+  private final Dashboard dashboard = new Dashboard();
 
   private final String[] actuatorNames = { "No_Test", "Drive_0_(p)", "Drive_1_(p)", "Drive_2_(p)", "Drive_3_(p)",
       "Azimuth_0_(p)", "Azimuth_1_(p)", "Azimuth_2_(p)", "Azimuth_3_(p)", "Swerve_0_Shifter_(b)",
