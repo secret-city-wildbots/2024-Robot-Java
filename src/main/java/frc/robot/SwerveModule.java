@@ -47,6 +47,7 @@ public class SwerveModule {
     private boolean unlockDrive0 = false;
     Timer shiftThreshold = new Timer();
     Timer robotDisabled = new Timer();
+    private boolean moduleFailure = false;
 
     /**
      * Creates a new swerve module object
@@ -70,9 +71,9 @@ public class SwerveModule {
     public SwerveModule(double driveHighGearRatio, double driveLowGearRatio, double azimuthRatio, int moduleNumber,
             TalonFXConfiguration driveConfig, TalonFXConfiguration azimuthConfig) {
         if (moduleNumber < 3) {
-            shifter = new DoubleSolenoid(PneumaticsModuleType.REVPH, 2 - moduleNumber, 13 + moduleNumber);
+            shifter = new DoubleSolenoid(2, PneumaticsModuleType.REVPH, 2 - moduleNumber, 13 + moduleNumber);
         } else {
-            shifter = new DoubleSolenoid(PneumaticsModuleType.REVPH, 3, 12);
+            shifter = new DoubleSolenoid(2, PneumaticsModuleType.REVPH, 3, 12);
         }
         shifter.set(Value.kForward);
 
@@ -157,6 +158,8 @@ public class SwerveModule {
      */
     public void updateOutputs(SwerveModuleState moduleState, boolean isAutonomous, boolean fLow,
             boolean moduleFailure, boolean homeWheels) {
+        this.moduleFailure = moduleFailure;
+
         // Decide shifter output
         if (fLow) {
             shifterOutput0 = false;
@@ -195,24 +198,7 @@ public class SwerveModule {
                     normalAzimuthOutput);
         }
 
-        // Decide whether to put azimuth in coast mode
-        boolean unlockAzimuth = Dashboard.unlockAzimuth.get();
-        if ((unlockAzimuth != unlockAzimuth0) || moduleFailure) {
-            if (unlockAzimuth || moduleFailure) {
-                if (azimuthSparkActive) {
-                    azimuthSpark.setIdleMode(IdleMode.kCoast);
-                } else {
-                    azimuthTalon.setNeutralMode(NeutralModeValue.Coast);
-                }
-            } else {
-                if (azimuthSparkActive) {
-                    azimuthSpark.setIdleMode(IdleMode.kBrake);
-                } else {
-                    azimuthTalon.setNeutralMode(NeutralModeValue.Brake);
-                }
-            }
-        }
-        unlockAzimuth0 = unlockAzimuth;
+        
 
         // Output drive
         ActuatorInterlocks.TAI_TalonFX_Power(drive, "Drive_" + ((Integer) moduleNumber).toString() + "_(p)",
@@ -248,5 +234,28 @@ public class SwerveModule {
      */
     public double getTemp() {
         return drive.getDeviceTemp().getValueAsDouble();
+    }
+
+
+
+    public void updateCoast() {
+        // Decide whether to put azimuth in coast mode
+        boolean unlockAzimuth = Dashboard.unlockAzimuth.get();
+        if ((unlockAzimuth != unlockAzimuth0) || moduleFailure) {
+            if (unlockAzimuth || moduleFailure) {
+                if (azimuthSparkActive) {
+                    azimuthSpark.setIdleMode(IdleMode.kCoast);
+                } else {
+                    azimuthTalon.setNeutralMode(NeutralModeValue.Coast);
+                }
+            } else {
+                if (azimuthSparkActive) {
+                    azimuthSpark.setIdleMode(IdleMode.kBrake);
+                } else {
+                    azimuthTalon.setNeutralMode(NeutralModeValue.Brake);
+                }
+            }
+        }
+        unlockAzimuth0 = unlockAzimuth;
     }
 }

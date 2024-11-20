@@ -197,7 +197,7 @@ public class LED {
                 // Party mode
                 for (var i = 0; i < m_ledBuffer.getLength(); i++) {
 
-                    var partyGrbVal = LEDHelpers.rgbtogrb(LEDHelpers.hsvToRgb(i * 20 + (int) (chaserStatus), 1, 1));
+                    var partyGrbVal = LEDHelpers.rgbtogrb(LEDHelpers.hsvToRgb((int)(360 / numberOfLEDs * i + chaserStatus)%360, 1, 1));
 
                     // Sets the specified LED to the HSV values
                     m_ledBuffer.setRGB(i, (i * 20) + Integer.parseInt(partyGrbVal.substring(0, 2)),

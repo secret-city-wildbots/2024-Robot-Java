@@ -160,11 +160,6 @@ public class Shooter {
                 // idk what to put here yet, it depends on the trap sequence
                 break;
         }
-
-        double kp = ((PIDController) SmartDashboard.getData("Wrist PID Controller")).getP();
-        double ki = ((PIDController) SmartDashboard.getData("Wrist PID Controller")).getI();
-        double kd = ((PIDController) SmartDashboard.getData("Wrist PID Controller")).getD();
-        wristController.setPID(kp, ki, kd);
     }
 
     public void updateShooter(boolean rightTrigger, boolean leftTrigger, Pose2d robotPosition, boolean haveNote) {
@@ -187,7 +182,9 @@ public class Shooter {
         ActuatorInterlocks.TAI_TalonFX_Power(right, "Shooter_Right_(p)", (spin) ? shooterPower : 0);
         ActuatorInterlocks.TAI_TalonFX_Power(left, "Shooter_Left_(p)", (spin) ? shooterPower * shooterRatio : 0);
         ActuatorInterlocks.TAI_TalonFX_Position(wrist, "Wrist_(p)", wristOutput / 360);
+    }
 
+    public void updateCoast() {
         // Put Wrist in coast while unlocked and only when changed
         boolean unlockWrist = Dashboard.unlockWrist.get();
         if (unlockWrist != unlockWrist0) {

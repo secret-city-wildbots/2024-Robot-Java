@@ -5,6 +5,7 @@ import com.ctre.phoenix6.hardware.Pigeon2;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
@@ -56,7 +57,7 @@ public class Drivetrain {
   SlewRateLimiter xAccelerationLimiter = new SlewRateLimiter(1, -1000, 0.0);
   SlewRateLimiter yAccelerationLimiter = new SlewRateLimiter(1, -1000, 0.0);
 
-  private SwerveModuleState[] moduleStates;
+  private SwerveModuleState[] moduleStates = new SwerveModuleState[4];
 
   // Used for modeDrivebase to check if master states changed
   private Robot.MasterStates masterState0 = Robot.masterState;
@@ -147,6 +148,10 @@ public class Drivetrain {
 
     antiDriftPID.enableContinuousInput(0, 360);
     headingAnglePID.enableContinuousInput(0, 360);
+
+    for (SwerveModuleState x: moduleStates) {
+      x = new SwerveModuleState(0.0, new Rotation2d(0.0));
+    }
   }
 
   /**
@@ -159,11 +164,6 @@ public class Drivetrain {
    * @param period           How long it has been since the last loop cycle
    */
   public void drive(XboxController driverController, boolean isAutonomous, double period) {
-    if (Dashboard.applyProfileSetpoints.get()) {
-      double[] setpoints = Dashboard.newDriverProfileSetpoints.get();
-      SwerveUtils.updateDriverProfile(setpoints);
-      Dashboard.currentDriverProfileSetpoints.set(setpoints);
-    }
 
     // Adjust strafe outputs
     double[] strafeOutputs = SwerveUtils.swerveScaleStrafe(driverController, isAutonomous);
@@ -369,5 +369,12 @@ public class Drivetrain {
     module1.updateOutputs(moduleStates[1], isAutonomous, fLow, driveFaults[1] || azimuthFaults[1], homeWheels);
     module2.updateOutputs(moduleStates[2], isAutonomous, fLow, driveFaults[2] || azimuthFaults[2], homeWheels);
     module3.updateOutputs(moduleStates[3], isAutonomous, fLow, driveFaults[3] || azimuthFaults[3], homeWheels);
+  }
+
+  public void updateCoast() {
+    module0.updateCoast();
+    module1.updateCoast();
+    module2.updateCoast();
+    module3.updateCoast();
   }
 }

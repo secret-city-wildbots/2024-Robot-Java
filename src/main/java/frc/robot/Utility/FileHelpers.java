@@ -22,7 +22,7 @@ public class FileHelpers {
             Scanner reader = new Scanner(file);
             while (reader.hasNextLine()) {
                 String data = reader.nextLine();
-                contents += data;
+                contents += "\n" + data;
             }
             reader.close();
         } catch (FileNotFoundException e) {
@@ -62,19 +62,23 @@ public class FileHelpers {
     public static double[][] parseCSV(String path) {
         // Read in the file and split at each new line
         String file = readFile(path);
-        String[] fileSetpoints = file.split("\r\n");
-        fileSetpoints[0] = "";
+        String[] fileSetpoints = file.split("\n");
+        
+        fileSetpoints[1] = "";
 
         // Parse plain text strings into doubles and places them in the output array
-        double[][] outputArray = new double[fileSetpoints.length - 1][fileSetpoints[1].split(",").length];
+        //fileSetpoints.length - 1, fileSetpoints.length - 1
+        double[][] outputArray = new double[(int)(fileSetpoints.length - 1)][(int)(fileSetpoints[2].split(",").length)];
         int i = 0;
         int j = 0;
         for (String x : fileSetpoints) {
             if (!x.equals("")) {
                 j = 0;
                 for (String y : x.split(",")) {
-                    outputArray[i][j] = Double.parseDouble(y);
-                    j += 1;
+                    if (!x.equals("")){
+                        outputArray[i][j] = Double.parseDouble(y);
+                        j += 1;
+                    }
                 }
                 i += 1;
             }

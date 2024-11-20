@@ -9,13 +9,12 @@ import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.XboxController;
 import frc.robot.Utility.FileHelpers;
+import frc.robot.Utility.SwerveUtils;
 import edu.wpi.first.math.geometry.Pose2d;
 
 public class Robot extends TimedRobot {
 
-
   private final String codeVersion = "2024-Robot-Java 1.0_dev";
-
 
   public static enum MasterStates {
     STOWED,
@@ -53,7 +52,7 @@ public class Robot extends TimedRobot {
   public static final String[] legalDrivers = { "Devin", "Reed", "Driver 3", "Driver 4", "Driver 5", "Programmers",
       "Kidz" };
 
-
+  private double selectedDriver0 = 0;
 
   /**
    * This is called when the robot is initalized
@@ -67,9 +66,9 @@ public class Robot extends TimedRobot {
     }
     Dashboard.robotProfile.set(robotProfile);
     Dashboard.codeVersion.set(codeVersion);
+    Dashboard.currentDriverProfileSetpoints
+        .set(SwerveUtils.readDriverProfiles(legalDrivers[(int) Dashboard.selectedDriver.get()]).toDoubleArray());
   }
-
-
 
   /**
    * This is called on every loop cycle
@@ -80,9 +79,22 @@ public class Robot extends TimedRobot {
     confirmedStates[masterState.ordinal()] = true;
     Dashboard.confirmedMasterStates.set(confirmedStates);
     Dashboard.isAutonomous.set(isAutonomous());
+    double selectedDriver = Dashboard.selectedDriver.get();
+    if (selectedDriver != selectedDriver0) {
+      selectedDriver0 = selectedDriver;
+      Dashboard.currentDriverProfileSetpoints
+          .set(SwerveUtils.readDriverProfiles(legalDrivers[(int) Dashboard.selectedDriver.get()]).toDoubleArray());
+    }
+    if (Dashboard.applyProfileSetpoints.get()) {
+      double[] setpoints = Dashboard.newDriverProfileSetpoints.get();
+      SwerveUtils.updateDriverProfile(setpoints);
+      Dashboard.currentDriverProfileSetpoints.set(setpoints);
+    }
+
+    drivetrain.updateCoast();
+    shooter.updateCoast();
+    elevator.updateCoast();
   }
-
-
 
   /**
    * This is called every loop cycle while the robot is disabled
@@ -92,8 +104,6 @@ public class Robot extends TimedRobot {
     Dashboard.loopTime.set(getPeriod());
   }
 
-
-
   /**
    * This is called every loop cycle while the robot is enabled in autonomous mode
    */
@@ -101,8 +111,6 @@ public class Robot extends TimedRobot {
   public void autonomousPeriodic() {
     drivetrain.updateOdometry();
   }
-
-
 
   /**
    * This is called every loop cycle while the robot is enabled in TeleOp mode
@@ -137,15 +145,16 @@ public class Robot extends TimedRobot {
     // Adjust LED color settings based on mode using driver controller
     led.updateLED(driverController, isAutonomous());
 
-    // Update outputs for everything
-    // This includes all motors, pistons, and other things
-    updateOutputs();
+    
 
     // Dashboard reporting
     Dashboard.loopTime.set(getPeriod());
+
+    // Update outputs for everything
+    // This includes all motors, pistons, and other things
+    updateOutputs();
   }
 
-  
   /**
    * 
    */
@@ -155,8 +164,6 @@ public class Robot extends TimedRobot {
     elevator.updateSensors();
     Dashboard.pressureTransducer.set(compressor.getPressure());
   }
-
-
 
   /**
    * 
@@ -168,8 +175,6 @@ public class Robot extends TimedRobot {
     drivetrain.updateOutputs(isAutonomous());
     led.updateOutputs();
   }
-
-
 
   /**
    * 

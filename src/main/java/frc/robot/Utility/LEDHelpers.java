@@ -11,7 +11,7 @@ public class LEDHelpers {
      */
     public static String hsvToRgb(float hue, float saturation, float value) {
 
-        int h = (int)(hue * 6);
+        int h = (int)(hue * 6) / 360;
         float f = hue * 6 - h;
         float p = value * (1 - saturation);
         float q = value * (1 - f * saturation);
@@ -52,6 +52,6 @@ public class LEDHelpers {
      * @return GRB ouput
      */
     public static String rgbtogrb(String rgb) {
-        return rgb.substring(2, 3) + rgb.substring(0, 1) + rgb.substring(4, 5);
+        return rgb.substring(2, 4) + rgb.substring(0, 2) + rgb.substring(4, 6);
     }
 }

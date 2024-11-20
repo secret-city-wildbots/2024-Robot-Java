@@ -32,7 +32,7 @@ public class SwerveUtils {
     }
 
     // Read in driver profile csv file and get the column containing the information (0)
-    double[] setpoints = ArrayHelpers.getColumn(FileHelpers.parseCSV("/home/lvuser/calibrations/" + profile), 0);
+    double[] setpoints = ArrayHelpers.getColumn(FileHelpers.parseCSV("/home/lvuser/calibrations/" + profile + ".csv"), 0);
 
     // Store the values in a DriverProfile object
     DriverProfile output = new DriverProfile(profile, setpoints[0], setpoints[1], setpoints[2], setpoints[3],

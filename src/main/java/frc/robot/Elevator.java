@@ -94,7 +94,9 @@ public class Elevator {
         } else {
             ActuatorInterlocks.TAI_TalonFX_Power(elevator, "Elevator_(p)", 0.0);
         }
+    }
 
+    public void updateCoast() {
         // Put elevator in coast while unlocked and only when changed
         boolean unlockElevator = Dashboard.unlockElevator.get();
         if (unlockElevator != unlockElevator0) {
