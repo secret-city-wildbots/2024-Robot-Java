@@ -5,7 +5,6 @@ import com.ctre.phoenix6.hardware.Pigeon2;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
@@ -149,8 +148,8 @@ public class Drivetrain {
     antiDriftPID.enableContinuousInput(0, 360);
     headingAnglePID.enableContinuousInput(0, 360);
 
-    for (SwerveModuleState x: moduleStates) {
-      x = new SwerveModuleState(0.0, new Rotation2d(0.0));
+    for (int i = 0; i<4; i++) {
+      moduleStates[i] = new SwerveModuleState();
     }
   }
 
