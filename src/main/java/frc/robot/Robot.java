@@ -91,9 +91,9 @@ public class Robot extends TimedRobot {
       Dashboard.currentDriverProfileSetpoints.set(setpoints);
     }
 
-    drivetrain.updateCoast();
-    shooter.updateCoast();
-    elevator.updateCoast();
+    drivetrain.updateOutputs(isAutonomous());
+    shooter.updateOutputs();
+    elevator.updateOutputs();
   }
 
   /**

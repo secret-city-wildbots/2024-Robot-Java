@@ -369,11 +369,4 @@ public class Drivetrain {
     module2.updateOutputs(moduleStates[2], isAutonomous, fLow, driveFaults[2] || azimuthFaults[2], homeWheels);
     module3.updateOutputs(moduleStates[3], isAutonomous, fLow, driveFaults[3] || azimuthFaults[3], homeWheels);
   }
-
-  public void updateCoast() {
-    module0.updateCoast();
-    module1.updateCoast();
-    module2.updateCoast();
-    module3.updateCoast();
-  }
 }

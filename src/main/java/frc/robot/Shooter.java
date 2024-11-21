@@ -182,9 +182,7 @@ public class Shooter {
         ActuatorInterlocks.TAI_TalonFX_Power(right, "Shooter_Right_(p)", (spin) ? shooterPower : 0);
         ActuatorInterlocks.TAI_TalonFX_Power(left, "Shooter_Left_(p)", (spin) ? shooterPower * shooterRatio : 0);
         ActuatorInterlocks.TAI_TalonFX_Position(wrist, "Wrist_(p)", wristOutput / 360);
-    }
 
-    public void updateCoast() {
         // Put Wrist in coast while unlocked and only when changed
         boolean unlockWrist = Dashboard.unlockWrist.get();
         if (unlockWrist != unlockWrist0) {
