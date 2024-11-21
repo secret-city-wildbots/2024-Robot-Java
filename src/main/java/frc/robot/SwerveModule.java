@@ -188,11 +188,11 @@ public class SwerveModule {
         if (azimuthSparkActive) {
             ActuatorInterlocks.TAI_SparkMAX_Position(azimuthSpark, azimuthPidController,
                     "Azimuth_" + ((Integer) moduleNumber).toString() + "_(p)",
-                    normalAzimuthOutput);
+                    normalAzimuthOutput, 0.0);
         } else {
             ActuatorInterlocks.TAI_TalonFX_Position(azimuthTalon,
                     "Azimuth_" + ((Integer) moduleNumber).toString() + "_(p)",
-                    normalAzimuthOutput);
+                    normalAzimuthOutput, 0.0);
         }
 
         // Decide whether to put azimuth in coast mode

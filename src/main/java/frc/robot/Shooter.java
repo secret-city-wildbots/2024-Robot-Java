@@ -13,7 +13,6 @@ import com.ctre.phoenix6.signals.ReverseLimitValue;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Shooter {
 
@@ -98,28 +97,38 @@ public class Shooter {
         wrist.setPosition(0);
     }
 
+    /**
+     * Retreives all sensor values for the shooter motors and wrist to use for other
+     * functions
+     */
     public void updateSensors() {
+        // Read in motor sensor values (velocity, temperature, and limit switches)
         rightTemp = right.getDeviceTemp().getValueAsDouble();
         leftTemp = left.getDeviceTemp().getValueAsDouble();
-        Dashboard.shooterTemps.set(new double[] { leftTemp, rightTemp });
+
         rightVelocity = right.getRotorVelocity().getValueAsDouble() * 60;
         leftVelocity = left.getRotorVelocity().getValueAsDouble() * 60;
-        Dashboard.shooterVelocities.set(new double[] { leftVelocity, rightVelocity });
+
         wristStowed = wrist.getReverseLimit().getValue() == ReverseLimitValue.ClosedToGround;
         wristAngle = wrist.getRotorPosition().getValueAsDouble() / 2048 * 360 / wristRatio; // ticks -> degrees
-        Dashboard.wristPosition.set(wristAngle);
+
         wristTemp = wrist.getDeviceTemp().getValueAsDouble();
-        Dashboard.wristTemp.set(wristTemp);
+
+        // Decide whether or not the shooter wheels are spun up enough
         if ((rightVelocity > (0.8 * shooterPower) * 6000)
                 && (leftVelocity > (0.8 * shooterPower * shooterRatio) * 6000)) {
             spunUp = true;
         }
 
+        // Report values to the dashboard
+        Dashboard.shooterTemps.set(new double[] { leftTemp, rightTemp });
+        Dashboard.shooterVelocities.set(new double[] { leftVelocity, rightVelocity });
+        Dashboard.wristPosition.set(wristAngle);
+        Dashboard.wristTemp.set(wristTemp);
+
         // The sin of the wrist angle * wrist COG * gravity * Wrist mass * arbitrary
         // scalar
-        wristArbitraryFFScalar = SmartDashboard.getNumber("Wrist FF Scalar", 1);
         wristFeedForward = Math.sin((wristAngle + 36) / 180 * Math.PI) * 0.5 * 32.17 * 20 * wristArbitraryFFScalar;
-        SmartDashboard.putNumber("Wrist FF Output", wristFeedForward);
     }
 
     public void updateWrist(Pose2d robotPosition, XboxController manipController) {
@@ -181,7 +190,7 @@ public class Shooter {
     public void updateOutputs() {
         ActuatorInterlocks.TAI_TalonFX_Power(right, "Shooter_Right_(p)", (spin) ? shooterPower : 0);
         ActuatorInterlocks.TAI_TalonFX_Power(left, "Shooter_Left_(p)", (spin) ? shooterPower * shooterRatio : 0);
-        ActuatorInterlocks.TAI_TalonFX_Position(wrist, "Wrist_(p)", wristOutput / 360);
+        ActuatorInterlocks.TAI_TalonFX_Position(wrist, "Wrist_(p)", wristOutput / 360, wristFeedForward);
 
         // Put Wrist in coast while unlocked and only when changed
         boolean unlockWrist = Dashboard.unlockWrist.get();

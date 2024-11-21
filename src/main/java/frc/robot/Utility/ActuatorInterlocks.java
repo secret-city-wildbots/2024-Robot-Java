@@ -90,8 +90,10 @@ public class ActuatorInterlocks {
      * @param actuatorName The name of the actuator matching the list in Robot.java
      * @param normalOutput The output in rotations that would go to the motor while
      *                     not in testing mode
+     * @param normalFF     The output for a feed forward (constant added power) that
+     *                     would go to the motor while not in testing mode
      */
-    public static void TAI_TalonFX_Position(TalonFX motor, String actuatorName, double normalOutput) {
+    public static void TAI_TalonFX_Position(TalonFX motor, String actuatorName, double normalOutput, double normalFF) {
         // Get Dashboard testing values
         testingActuator = Dashboard.testActuatorName.get();
         testingPeriod = Dashboard.testActuatorPeriod.get();
@@ -101,6 +103,7 @@ public class ActuatorInterlocks {
         // dashboard amplitude as double output or periodic sine output
         if (testingActuator.equals("No_Test")) {
             PositionDutyCycle controlRequest = new PositionDutyCycle(normalOutput);
+            controlRequest.FeedForward = normalFF;
             motor.setControl(controlRequest);
         } else if (testingActuator.equals(actuatorName)) {
             if (testingPeriod == 0) {
@@ -180,7 +183,7 @@ public class ActuatorInterlocks {
      *                     not in testing mode
      */
     public static void TAI_SparkMAX_Position(CANSparkMax motor, SparkPIDController pidController, String actuatorName,
-            double normalOutput) {
+            double normalOutput, double normalFF) {
         // Get Dashboard testing values
         testingActuator = Dashboard.testActuatorName.get();
         testingPeriod = Dashboard.testActuatorPeriod.get();
@@ -190,6 +193,7 @@ public class ActuatorInterlocks {
         // dashboard amplitude as double output or periodic sine output
         if (testingActuator.equals("No_Test")) {
             pidController.setReference(normalOutput, CANSparkBase.ControlType.kPosition);
+            pidController.setFF(normalFF);
         } else if (testingActuator.equals(actuatorName)) {
             if (testingPeriod == 0) {
                 motor.set(testingValue);

@@ -58,6 +58,7 @@ public class Robot extends TimedRobot {
    * This is called when the robot is initalized
    */
   public Robot() {
+    // Initialize dashboard values
     Dashboard.legalActuatorNames.set(actuatorNames);
     Dashboard.legalDrivers.set(legalDrivers);
     if (robotProfile.equals("2024_Robot")) {
@@ -75,6 +76,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
+
     boolean[] confirmedStates = new boolean[5];
     confirmedStates[masterState.ordinal()] = true;
     Dashboard.confirmedMasterStates.set(confirmedStates);
