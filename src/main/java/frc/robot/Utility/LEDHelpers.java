@@ -39,11 +39,11 @@ public class LEDHelpers {
      */
     public static String rgbToString(float r, float g, float b) {
         String rs = Integer.toHexString((int)(r * 256));
-        rs = (rs.length() < 2) ? "00":rs;
+        rs = (rs.length() < 2) ? "0"+rs:rs;
         String gs = Integer.toHexString((int)(g * 256));
-        gs = (gs.length() < 2) ? "00":gs;
+        gs = (gs.length() < 2) ? "0"+gs:gs;
         String bs = Integer.toHexString((int)(b * 256));
-        bs = (bs.length() < 2) ? "00":bs;
+        bs = (bs.length() < 2) ? "0"+bs:bs;
         return rs + gs + bs;
     }
 
