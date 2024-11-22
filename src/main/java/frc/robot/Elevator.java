@@ -4,6 +4,7 @@ import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionDutyCycle;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.InvertedValue;
 //import com.ctre.phoenix6.signals.ReverseLimitValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
@@ -45,6 +46,9 @@ public class Elevator {
             default:
                 elevatorRatio = 7.72;
         }
+
+        elevatorConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+        elevatorConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
 
         elevatorConfig.Slot0.kP = elevatorController.getP();
         elevatorConfig.Slot0.kI = elevatorController.getI();

@@ -32,8 +32,8 @@ public class Robot extends TimedRobot {
   private final Drivetrain drivetrain = new Drivetrain();
   private final XboxController driverController = new XboxController(0);
   private final XboxController manipController = new XboxController(1);
-  private final Intake intake = new Intake(0.5, 0.5, 0.5);
-  private final Shooter shooter = new Shooter(0.7, 0.576);
+  private final Intake intake = new Intake(0.5, 0.5, 0.2);
+  private final Shooter shooter = new Shooter(0, 0.576); // Normal power is 0.7
   private final Elevator elevator = new Elevator();
   private final Compressor compressor = new Compressor(2, PneumaticsModuleType.REVPH);
   private final LED led = new LED();

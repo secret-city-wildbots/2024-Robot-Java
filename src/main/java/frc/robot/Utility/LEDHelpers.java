@@ -38,12 +38,12 @@ public class LEDHelpers {
      * @return A string combining r, g, and b
      */
     public static String rgbToString(float r, float g, float b) {
-        String rs = Integer.toHexString((int)(r * 256));
-        rs = (rs.length() < 2) ? "0"+rs:rs;
-        String gs = Integer.toHexString((int)(g * 256));
-        gs = (gs.length() < 2) ? "0"+gs:gs;
-        String bs = Integer.toHexString((int)(b * 256));
-        bs = (bs.length() < 2) ? "0"+bs:bs;
+        String rs = Integer.toString((int)(r * 256));
+        rs = (rs.length() < 3) ? (rs.length() < 2) ? "00"+rs:"0"+rs:rs;
+        String gs = Integer.toString((int)(g * 256));
+        gs = (gs.length() < 3) ? (gs.length() < 2) ? "00"+gs:"0"+gs:gs;
+        String bs = Integer.toString((int)(b * 256));
+        bs = (bs.length() < 3) ? (bs.length() < 2) ? "00"+bs:"0"+bs:bs;
         return rs + gs + bs;
     }
 
@@ -55,6 +55,6 @@ public class LEDHelpers {
      * @return GRB ouput
      */
     public static String rgbtogrb(String rgb) {
-        return rgb.substring(2, 4) + rgb.substring(0, 2) + rgb.substring(4, 6);
+        return rgb.substring(3, 6) + rgb.substring(0, 3) + rgb.substring(6, 9);
     }
 }

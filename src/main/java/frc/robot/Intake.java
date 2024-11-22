@@ -47,7 +47,7 @@ public class Intake {
         indexerIntakePower = indexerPower;
 
         TalonFXConfiguration innerConfig = new TalonFXConfiguration();
-        innerConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
+        innerConfig.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
 
         inner.getConfigurator().apply(innerConfig);
 

@@ -61,6 +61,8 @@ public class LED {
         }
         m_ledBuffer = new AddressableLEDBuffer(numberOfLEDs);
         priorLedBuffer = new AddressableLEDBuffer(numberOfLEDs);
+
+        m_led.setLength(numberOfLEDs);
     }
 
     /**
@@ -71,7 +73,7 @@ public class LED {
     public void updateLED(XboxController driverController, boolean isAutonomous) {
         // If driver presses up d-pad, increment LED state
         if (driverController.getPOV() < 45 || driverController.getPOV() > 315) {
-            ledState = LEDStates.values()[ledState.ordinal() + 1];
+            ledState = (ledState.equals(LEDStates.CHOOSEHUE)) ? LEDStates.values()[ledState.ordinal() + 1] : LEDStates.NORMAL;
         }
 
         // remember previous LED buffer
@@ -158,14 +160,14 @@ public class LED {
                 for (var i = 0; i < m_ledBuffer.getLength() - 3; i++) {
                     if (chaserStatus == i) {
                         m_ledBuffer.setRGB(i,
-                                Integer.parseInt(nominalChaserGRB.substring(0, 2)),
-                                Integer.parseInt(nominalChaserGRB.substring(2, 4)),
-                                Integer.parseInt(nominalChaserGRB.substring(4, 6)));
+                                Integer.parseInt(nominalChaserGRB.substring(0,3)),
+                                Integer.parseInt(nominalChaserGRB.substring(3,6)),
+                                Integer.parseInt(nominalChaserGRB.substring(6,9)));
                     } else {
                         m_ledBuffer.setRGB(i,
-                                Integer.parseInt(normalGrbVal.substring(0, 2)),
-                                Integer.parseInt(normalGrbVal.substring(2, 4)),
-                                Integer.parseInt(normalGrbVal.substring(4, 6)));
+                                Integer.parseInt(normalGrbVal.substring(0,3)),
+                                Integer.parseInt(normalGrbVal.substring(3,6)),
+                                Integer.parseInt(normalGrbVal.substring(6,9)));
                     }
                 }
                 m_ledBuffer.setRGB(numberOfLEDs - 3, 0, 0, 0);
@@ -173,22 +175,22 @@ public class LED {
                 // Set the final 2 lights to show robot control mode
                 if (!isAutonomous) {
                     m_ledBuffer.setRGB(numberOfLEDs - 2,
-                            Integer.parseInt(humanControlGRB.substring(0, 2)),
-                            Integer.parseInt(humanControlGRB.substring(2, 4)),
-                            Integer.parseInt(humanControlGRB.substring(4, 6)));
+                            Integer.parseInt(humanControlGRB.substring(0,3)),
+                            Integer.parseInt(humanControlGRB.substring(3,6)),
+                            Integer.parseInt(humanControlGRB.substring(6,9)));
                     m_ledBuffer.setRGB(numberOfLEDs - 1,
-                            Integer.parseInt(humanControlGRB.substring(0, 2)),
-                            Integer.parseInt(humanControlGRB.substring(2, 4)),
-                            Integer.parseInt(humanControlGRB.substring(4, 6)));
+                            Integer.parseInt(humanControlGRB.substring(0,3)),
+                            Integer.parseInt(humanControlGRB.substring(3,6)),
+                            Integer.parseInt(humanControlGRB.substring(6,9)));
                 } else {
                     m_ledBuffer.setRGB(numberOfLEDs - 2,
-                            Integer.parseInt(robotControlGRB.substring(0, 2)),
-                            Integer.parseInt(robotControlGRB.substring(2, 4)),
-                            Integer.parseInt(robotControlGRB.substring(4, 6)));
+                            Integer.parseInt(robotControlGRB.substring(0,3)),
+                            Integer.parseInt(robotControlGRB.substring(3,6)),
+                            Integer.parseInt(robotControlGRB.substring(6,9)));
                     m_ledBuffer.setRGB(numberOfLEDs - 1,
-                            Integer.parseInt(robotControlGRB.substring(0, 2)),
-                            Integer.parseInt(robotControlGRB.substring(2, 4)),
-                            Integer.parseInt(robotControlGRB.substring(4, 6)));
+                            Integer.parseInt(robotControlGRB.substring(0,3)),
+                            Integer.parseInt(robotControlGRB.substring(3,6)),
+                            Integer.parseInt(robotControlGRB.substring(6,9)));
                 }
                 chaserStatus += 1;
                 chaserStatus %= numberOfLEDs - 3;
@@ -200,9 +202,9 @@ public class LED {
                     var partyGrbVal = LEDHelpers.rgbtogrb(LEDHelpers.hsvToRgb((int)(360 / numberOfLEDs * i + chaserStatus)%360, 1, 1));
 
                     // Sets the specified LED to the HSV values
-                    m_ledBuffer.setRGB(i, (i * 20) + Integer.parseInt(partyGrbVal.substring(0, 2)),
-                            (i * 20) + Integer.parseInt(partyGrbVal.substring(2, 4)),
-                            (i * 20) + Integer.parseInt(partyGrbVal.substring(4, 6)));
+                    m_ledBuffer.setRGB(i, (i * 20) + Integer.parseInt(partyGrbVal.substring(0,3)),
+                            (i * 20) + Integer.parseInt(partyGrbVal.substring(3,6)),
+                            (i * 20) + Integer.parseInt(partyGrbVal.substring(6,9)));
                 }
                 // Increment chaser (Chaser is a double so that increments don't have to be
                 // integers)
@@ -211,18 +213,18 @@ public class LED {
                 break;
             case LOCATE:
                 m_ledBuffer.setRGB(locateLED,
-                        Integer.parseInt(nominalChaserGRB.substring(0, 2)),
-                        Integer.parseInt(nominalChaserGRB.substring(2, 4)),
-                        Integer.parseInt(nominalChaserGRB.substring(4, 6)));
+                        Integer.parseInt(nominalChaserGRB.substring(0,3)),
+                        Integer.parseInt(nominalChaserGRB.substring(3,6)),
+                        Integer.parseInt(nominalChaserGRB.substring(6,9)));
                 break;
             case CHOOSEHUE:
                 String chooseGRB = LEDHelpers.rgbtogrb(LEDHelpers.hsvToRgb(chosenHue, 1, 1));
                 for (var i = 0; i < m_ledBuffer.getLength(); i++) {
                     // Sets the specified LED to the HSV values
                     m_ledBuffer.setRGB(i,
-                            Integer.parseInt(chooseGRB.substring(0, 2)),
-                            Integer.parseInt(chooseGRB.substring(2, 4)),
-                            Integer.parseInt(chooseGRB.substring(4, 6)));
+                            Integer.parseInt(chooseGRB.substring(0,3)),
+                            Integer.parseInt(chooseGRB.substring(3,6)),
+                            Integer.parseInt(chooseGRB.substring(6,9)));
                 }
                 break;
         }

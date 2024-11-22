@@ -52,9 +52,9 @@ public class Shooter {
     private TalonFXConfiguration leftConfig = new TalonFXConfiguration();
 
     private double wristFeedForward = 0;
-    private double wristArbitraryFFScalar = 0.000001;
+    private double wristArbitraryFFScalar = 0; // Currently disabled for testing PIDs
 
-    private PIDController wristController = new PIDController(0, 0, 0);
+    private PIDController wristController = new PIDController(0.11, 0.015, 0.025);
 
     private final double wristRatio;
 
@@ -93,7 +93,7 @@ public class Shooter {
         leftConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         leftConfig.MotorOutput.NeutralMode = NeutralModeValue.Coast;
         left.getConfigurator().apply(leftConfig);
-
+        
         wrist.setPosition(0);
     }
 
@@ -110,7 +110,7 @@ public class Shooter {
         leftVelocity = left.getRotorVelocity().getValueAsDouble() * 60;
 
         wristStowed = wrist.getReverseLimit().getValue() == ReverseLimitValue.ClosedToGround;
-        wristAngle = wrist.getRotorPosition().getValueAsDouble() / 2048 * 360 / wristRatio; // ticks -> degrees
+        wristAngle = wrist.getRotorPosition().getValueAsDouble() * 360 / wristRatio; // rotations -> degrees
 
         wristTemp = wrist.getDeviceTemp().getValueAsDouble();
 
@@ -128,7 +128,7 @@ public class Shooter {
 
         // The sin of the wrist angle * wrist COG * gravity * Wrist mass * arbitrary
         // scalar
-        wristFeedForward = Math.sin((wristAngle + 36) / 180 * Math.PI) * 0.5 * 32.17 * 20 * wristArbitraryFFScalar;
+        wristFeedForward = Math.sin((wristAngle + 36) / 180 * Math.PI) * 0.5 * 32.17 * 20 * wristArbitraryFFScalar;        
     }
 
     public void updateWrist(Pose2d robotPosition, XboxController manipController) {
@@ -160,7 +160,7 @@ public class Shooter {
                 }
                 break;
             case AMP:
-                wristOutput = 70;
+                wristOutput = 56;
                 break;
             case CLIMBING:
                 wristOutput = 35;
@@ -190,7 +190,7 @@ public class Shooter {
     public void updateOutputs() {
         ActuatorInterlocks.TAI_TalonFX_Power(right, "Shooter_Right_(p)", (spin) ? shooterPower : 0);
         ActuatorInterlocks.TAI_TalonFX_Power(left, "Shooter_Left_(p)", (spin) ? shooterPower * shooterRatio : 0);
-        ActuatorInterlocks.TAI_TalonFX_Position(wrist, "Wrist_(p)", wristOutput / 360, wristFeedForward);
+        ActuatorInterlocks.TAI_TalonFX_Position(wrist, "Wrist_(p)", wristOutput / 360 * wristRatio, wristFeedForward);
 
         // Put Wrist in coast while unlocked and only when changed
         boolean unlockWrist = Dashboard.unlockWrist.get();

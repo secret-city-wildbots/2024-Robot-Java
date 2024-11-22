@@ -58,7 +58,7 @@ public class ActuatorInterlocks {
         if (testingActuator.equals("No_Test")) {
             motor.set(normalOutput);
         } else if (testingActuator.equals(actuatorName)) {
-            if (testingPeriod == 0) {
+            if (testingPeriod < 0.001) {
                 motor.set(testingValue);
             } else {
                 motor.set(
@@ -106,7 +106,7 @@ public class ActuatorInterlocks {
             controlRequest.FeedForward = normalFF;
             motor.setControl(controlRequest);
         } else if (testingActuator.equals(actuatorName)) {
-            if (testingPeriod == 0) {
+            if (testingPeriod < 0.001) {
                 motor.set(testingValue);
             } else {
                 motor.set(
@@ -149,7 +149,7 @@ public class ActuatorInterlocks {
         if (testingActuator.equals("No_Test")) {
             motor.set(normalOutput);
         } else if (testingActuator.equals(actuatorName)) {
-            if (testingPeriod == 0) {
+            if (testingPeriod < 0.001) {
                 motor.set(testingValue);
             } else {
                 motor.set(
@@ -195,7 +195,7 @@ public class ActuatorInterlocks {
             pidController.setReference(normalOutput, CANSparkBase.ControlType.kPosition);
             pidController.setFF(normalFF);
         } else if (testingActuator.equals(actuatorName)) {
-            if (testingPeriod == 0) {
+            if (testingPeriod < 0.001) {
                 motor.set(testingValue);
             } else {
                 motor.set(
@@ -236,7 +236,7 @@ public class ActuatorInterlocks {
         if (testingActuator.equals("No_Test")) {
             solenoid.set(normalValue);
         } else if (testingActuator.equals(actuatorName)) {
-            if (testingValue == 1.0) {
+            if (testingValue > 0.9) {
                 solenoid.set(Value.kForward);
             } else {
                 solenoid.set(Value.kReverse);
