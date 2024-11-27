@@ -11,24 +11,17 @@ public class Control {
      * @return Interpolated output
      */
     public static double interpolateCSV(double value, double[][] array) {
-        double[] col1 = ArrayHelpers.getColumn(array, 0);
-        double[] col2 = ArrayHelpers.getColumn(array, 1);
-        int length = col1.length - 1;
-        if (col1.length < 2) {
-            if (value < col1[0]) {
-                return col2[0] - (((col2[1] - col2[0]) / (col1[1] - col1[0])) * (col1[0] - value));
-            } else {
-                for (int i = 1; i < col1.length; i++) {
-                    if (value < col1[i]) {
-                        return col2[i - 1] + (((col2[i] - col2[i - 1]) / (col1[i] - col1[i - 1])) * (col1[i] - value));
-                    }
-                }
-                return col2[length] + (((col2[length] - col2[length - 1]) / (col1[length] - col1[length - 1]))
-                        * (value - col1[length]));
+        double[] x = ArrayHelpers.getColumn(array, 0);
+        double[] y = ArrayHelpers.getColumn(array, 1);
+        int index = -1;
+        for (int i = 1; i<=x.length - 1; i++) {
+            index += 1;
+            if (value < x[i]) {
+                break;
             }
-        } else {
-            return 0;
         }
+        
+        return y[index] + (value - x[index]) * (y[index+1] - y[index]) / (x[index+1] - x[index]);
     }
 
     /**

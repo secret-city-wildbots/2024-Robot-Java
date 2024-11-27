@@ -29,6 +29,8 @@ public class Robot extends TimedRobot {
   public static double robotLength;
   public static double robotWidth;
 
+  public static double loopTime = 20;
+
   private final Drivetrain drivetrain = new Drivetrain();
   private final XboxController driverController = new XboxController(0);
   private final XboxController manipController = new XboxController(1);
@@ -37,6 +39,7 @@ public class Robot extends TimedRobot {
   private final Elevator elevator = new Elevator();
   private final Compressor compressor = new Compressor(2, PneumaticsModuleType.REVPH);
   private final LED led = new LED();
+  private static double loopTime0 = System.currentTimeMillis();
 
   public static final String robotProfile = FileHelpers.readFile("/home/lvuser/calibrations/RobotProfile.txt");
 
@@ -96,6 +99,9 @@ public class Robot extends TimedRobot {
     drivetrain.updateOutputs(isAutonomous());
     shooter.updateOutputs();
     elevator.updateOutputs();
+
+    updateLoopTime();
+    Dashboard.loopTime.set(loopTime);
   }
 
   /**
@@ -103,7 +109,7 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void disabledPeriodic() {
-    Dashboard.loopTime.set(getPeriod());
+    
   }
 
   /**
@@ -147,11 +153,6 @@ public class Robot extends TimedRobot {
     // Adjust LED color settings based on mode using driver controller
     led.updateLED(driverController, isAutonomous());
 
-    
-
-    // Dashboard reporting
-    Dashboard.loopTime.set(getPeriod());
-
     // Update outputs for everything
     // This includes all motors, pistons, and other things
     updateOutputs();
@@ -164,6 +165,7 @@ public class Robot extends TimedRobot {
     intake.updateSensors();
     shooter.updateSensors();
     elevator.updateSensors();
+    drivetrain.updateSensors();
     Dashboard.pressureTransducer.set(compressor.getPressure());
   }
 
@@ -198,5 +200,12 @@ public class Robot extends TimedRobot {
     } else if (manipController.getLeftTriggerAxis() > 0.7 && manipController.getStartButton()) {
       masterState = MasterStates.CLIMBING;
     }
+  }
+
+
+
+  public static void updateLoopTime() {
+    loopTime = System.currentTimeMillis()-loopTime0;
+    loopTime0 = System.currentTimeMillis();
   }
 }

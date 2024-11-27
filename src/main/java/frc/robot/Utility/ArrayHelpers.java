@@ -10,9 +10,9 @@ public class ArrayHelpers {
      * @return The 1d array containing each element from the chosen column
      */
     public static double[] getColumn(double[][] array, int index) {
-        double[] column = new double[array[index].length];
-        for (int i = 0; i < array[index].length; i++) {
-            column[i] = array[index][i];
+        double[] column = new double[array.length];
+        for (int i = 0; i < array.length; i++) {
+            column[i] = array[i][index];
         }
         return column;
     }

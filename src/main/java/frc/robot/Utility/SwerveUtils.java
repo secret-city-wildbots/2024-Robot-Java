@@ -32,7 +32,7 @@ public class SwerveUtils {
     }
 
     // Read in driver profile csv file and get the column containing the information (0)
-    double[] setpoints = ArrayHelpers.getColumn(FileHelpers.parseCSV("/home/lvuser/calibrations/" + profile + ".csv"), 0);
+    double[] setpoints = FileHelpers.parseCSV("/home/lvuser/calibrations/" + profile + ".csv")[0];
 
     // Store the values in a DriverProfile object
     DriverProfile output = new DriverProfile(profile, setpoints[0], setpoints[1], setpoints[2], setpoints[3],
@@ -235,6 +235,13 @@ public class SwerveUtils {
    * @return Power output for DutyCycle command
    */
   public static double driveCommandToPower(SwerveModuleState moduleState, boolean shifterValue) {
+
+    // System.out.println("Value: " + Math.abs(moduleState.speedMetersPerSecond) * (Drivetrain.maxGroundSpeed / (Drivetrain.actualWheelDiameter / 3)));
+    // System.out.println("Spreadsheet[0][1]" + lowGearCalibration[1][1]);
+    // System.out.println(Control.interpolateCSV(
+    //     Math.abs(moduleState.speedMetersPerSecond) * (Drivetrain.maxGroundSpeed / (Drivetrain.actualWheelDiameter / 3)),
+    //     (shifterValue) ? highGearCalibration : lowGearCalibration));
+
     return Math.signum(moduleState.speedMetersPerSecond) * Control.interpolateCSV(
         Math.abs(moduleState.speedMetersPerSecond) * (Drivetrain.maxGroundSpeed / (Drivetrain.actualWheelDiameter / 3)),
         (shifterValue) ? highGearCalibration : lowGearCalibration);
@@ -255,6 +262,6 @@ public class SwerveUtils {
     outputString += String.valueOf(newDriverProfileSetpoints[5]);
 
     // Write out content to Profile.csv
-    FileHelpers.writeFile("/home/lvuser/calibrations/" + Dashboard.selectedDriver.get() + ".csv", outputString);
+    FileHelpers.writeFile("/home/lvuser/calibrations/" + Robot.legalDrivers[(int)Dashboard.selectedDriver.get()] + ".csv", outputString);
   }
 }

@@ -109,7 +109,7 @@ public class Shooter {
         rightVelocity = right.getRotorVelocity().getValueAsDouble() * 60;
         leftVelocity = left.getRotorVelocity().getValueAsDouble() * 60;
 
-        wristStowed = wrist.getReverseLimit().getValue() == ReverseLimitValue.ClosedToGround;
+        wristStowed = wrist.getReverseLimit().getValue().equals(ReverseLimitValue.ClosedToGround);
         wristAngle = wrist.getRotorPosition().getValueAsDouble() * 360 / wristRatio; // rotations -> degrees
 
         wristTemp = wrist.getDeviceTemp().getValueAsDouble();

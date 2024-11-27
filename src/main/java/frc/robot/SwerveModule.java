@@ -6,12 +6,15 @@ import frc.robot.Utility.ClassHelpers.Timer;
 import com.ctre.phoenix6.configs.Slot0Configs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.signals.ForwardLimitValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.signals.ReverseLimitValue;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.SparkAbsoluteEncoder;
 import com.revrobotics.SparkPIDController;
 import com.revrobotics.CANSparkBase.IdleMode;
+import com.revrobotics.SparkLimitSwitch;
 
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
@@ -21,7 +24,14 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 
+
 public class SwerveModule {
+    enum ShiftedStates {
+        LOW,
+        TRANS,
+        HIGH
+    }
+
     private final double shiftToHighRPM = 4000;
     private final double shiftToLowRPM = 500;
     private static final double kWheelRadius = 0.0636;
@@ -37,7 +47,11 @@ public class SwerveModule {
     private CANSparkMax azimuthSpark;
     private SparkAbsoluteEncoder azimuthEncoder;
     private SparkPIDController azimuthPidController;
+    private SparkLimitSwitch azimuthForwardLimit;
+    private SparkLimitSwitch azimuthReverseLimit;
     public final DoubleSolenoid shifter;
+
+    public ShiftedStates shiftedState = ShiftedStates.LOW;    
 
     private boolean azimuthSparkActive;
 
@@ -47,6 +61,9 @@ public class SwerveModule {
     private boolean unlockDrive0 = false;
     Timer shiftThreshold = new Timer();
     Timer robotDisabled = new Timer();
+
+    private double driveSpeed = 0;
+    private double azimuthAngle = 0;
 
     /**
      * Creates a new swerve module object
@@ -94,6 +111,8 @@ public class SwerveModule {
             azimuthPidController = azimuthSpark.getPIDController();
             this.azimuthEncoder = azimuthSpark.getAbsoluteEncoder();
             azimuthSparkActive = true;
+            this.azimuthForwardLimit = azimuthSpark.getForwardLimitSwitch(SparkLimitSwitch.Type.kNormallyOpen);
+            this.azimuthReverseLimit = azimuthSpark.getReverseLimitSwitch(SparkLimitSwitch.Type.kNormallyOpen);
         }
 
         // Apply configs and set PIDs
@@ -106,6 +125,42 @@ public class SwerveModule {
         }
 
         this.drive.getConfigurator().apply(driveConfig);
+    }
+
+
+
+    public SwerveModuleState updateSensors() {
+        if (azimuthSparkActive) {
+            azimuthAngle = azimuthEncoder.getPosition() / azimuthRatio * 2 * Math.PI;
+            if (azimuthForwardLimit.isPressed() && azimuthReverseLimit.isPressed()) {
+                shiftedState = ShiftedStates.LOW;
+                System.out.println("Error: High and low sensor are triggered at the same time on module " + moduleNumber);
+            } else if (azimuthForwardLimit.isPressed()) {
+                shiftedState = ShiftedStates.HIGH;
+            } else if (azimuthReverseLimit.isPressed()) {
+                shiftedState = ShiftedStates.LOW;
+            } else {
+                shiftedState = ShiftedStates.TRANS;
+            }
+        } else {
+            boolean forwardLimit = azimuthTalon.getForwardLimit().getValue().equals(ForwardLimitValue.ClosedToGround);
+            boolean reverseLimit = azimuthTalon.getReverseLimit().getValue().equals(ReverseLimitValue.ClosedToGround);
+            if (forwardLimit && reverseLimit) {
+                shiftedState = ShiftedStates.LOW;
+                System.out.println("Error: High and low sensor are triggered at the same time on module " + moduleNumber);
+            } else if (forwardLimit) {
+                shiftedState = ShiftedStates.HIGH;
+            } else if (reverseLimit) {
+                shiftedState = ShiftedStates.LOW;
+            } else {
+                shiftedState = ShiftedStates.TRANS;
+            }
+            azimuthAngle = azimuthTalon.getRotorPosition().getValueAsDouble() / azimuthRatio * 2 * Math.PI;
+        }
+
+        driveSpeed = drive.getVelocity().getValueAsDouble() / ((shiftedState.equals(ShiftedStates.HIGH)) ? driveHighGearRatio : driveLowGearRatio) * Math.PI * Drivetrain.actualWheelDiameter;
+
+        return new SwerveModuleState(driveSpeed, new Rotation2d(azimuthAngle));
     }
 
     /**
@@ -127,6 +182,10 @@ public class SwerveModule {
                         / ((shifter.get() == Value.kForward) ? driveHighGearRatio : driveLowGearRatio))
                         * (2 * Math.PI * kWheelRadius),
                 rotation);
+    }
+
+    public SwerveModuleState getState() {
+        return new SwerveModuleState();
     }
 
     /**
