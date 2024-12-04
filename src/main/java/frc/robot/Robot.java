@@ -96,6 +96,10 @@ public class Robot extends TimedRobot {
       Dashboard.currentDriverProfileSetpoints.set(setpoints);
     }
 
+    drivetrain.updateSensors();
+
+    drivetrain.drive(driverController, isAutonomous(), loopTime);
+
     drivetrain.updateOutputs(isAutonomous());
     shooter.updateOutputs();
     elevator.updateOutputs();
@@ -133,7 +137,7 @@ public class Robot extends TimedRobot {
 
     // Check for any drive updates and drive accordingly
     Pose2d robotPosition = drivetrain.updateOdometry().getPoseMeters();
-    drivetrain.drive(driverController, isAutonomous(), getPeriod());
+    // drivetrain.drive(driverController, isAutonomous(), getPeriod());
 
     // Check for state updates based on manip inputs
     updateMasterState();

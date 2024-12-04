@@ -23,6 +23,7 @@ import frc.robot.Utility.SwerveUtils;
 import frc.robot.Utility.ClassHelpers.Latch;
 // import frc.robot.Utility.ClassHelpers.LimitAcceleration;
 import frc.robot.Utility.ClassHelpers.StickyButton;
+import edu.wpi.first.math.util.Units;
 
 public class Drivetrain {
   public static double driveHighGearRatio;
@@ -97,34 +98,34 @@ public class Drivetrain {
     // Check for driver profile
     switch (Robot.robotProfile) {
       case "2024_Robot":
-        nominalWheelDiameter = 5 * 0.0254; // 5 is inches, converts to meters
-        actualWheelDiameter = 4.53 * 0.0254; // 4.53 is inches, converts to meters
-        maxGroundSpeed = 18.8 * (actualWheelDiameter / nominalWheelDiameter) * 0.3048; // 18.8 is feet/s, converts to m/s
-        maxLowGearSpeed = 9.2 * (actualWheelDiameter / nominalWheelDiameter) * 0.3048; // 18.8 is feet/s, converts to m/s
-        maxRotateSpeed = 360 * (12 * maxGroundSpeed)
-            / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength / 2, 2) + Math.pow(Robot.robotWidth / 2, 2)))) / 180 * 2 * Math.PI; // In degrees/s, converts to rad/s
+        nominalWheelDiameter = Units.inchesToMeters(5);
+        actualWheelDiameter = Units.inchesToMeters(4.53);
+        maxGroundSpeed = Units.feetToMeters(18.8 * (actualWheelDiameter / nominalWheelDiameter));
+        maxLowGearSpeed = Units.feetToMeters(9.2 * (actualWheelDiameter / nominalWheelDiameter));
+        maxRotateSpeed = Units.degreesToRadians(360 * (12 * maxGroundSpeed)
+            / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength / 2, 2) + Math.pow(Robot.robotWidth / 2, 2)))));
         driveHighGearRatio = 7.13;
         driveLowGearRatio = 14.66;
         azimuthGearRatio = 16;
         break;
       case "Steve2":
-        nominalWheelDiameter = 5;
-        actualWheelDiameter = 4.78;
-        maxGroundSpeed = 17.8 * (actualWheelDiameter / nominalWheelDiameter);
-        maxLowGearSpeed = 8.3 * (actualWheelDiameter / nominalWheelDiameter);
-        maxRotateSpeed = 360 * (12 * maxGroundSpeed)
-            / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength / 2, 2) + Math.pow(Robot.robotWidth / 2, 2))));
+        nominalWheelDiameter = Units.inchesToMeters(5);
+        actualWheelDiameter = Units.inchesToMeters(4.78);
+        maxGroundSpeed = Units.feetToMeters(17.8 * (actualWheelDiameter / nominalWheelDiameter));
+        maxLowGearSpeed = Units.feetToMeters(8.3 * (actualWheelDiameter / nominalWheelDiameter));
+        maxRotateSpeed = Units.degreesToRadians(360 * (12 * maxGroundSpeed)
+            / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength / 2, 2) + Math.pow(Robot.robotWidth / 2, 2)))));
         driveHighGearRatio = 6.42;
         driveLowGearRatio = 14.12;
         azimuthGearRatio = 15.6;
         break;
       default:
-        nominalWheelDiameter = 5;
-        actualWheelDiameter = 4.78;
-        maxGroundSpeed = 17.8 * (actualWheelDiameter / nominalWheelDiameter);
-        maxLowGearSpeed = 8.3 * (actualWheelDiameter / nominalWheelDiameter);
-        maxRotateSpeed = 360 * (12 * maxGroundSpeed)
-            / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength / 2, 2) + Math.pow(Robot.robotWidth / 2, 2))));
+        nominalWheelDiameter = Units.inchesToMeters(5);
+        actualWheelDiameter = Units.inchesToMeters(4.78);
+        maxGroundSpeed = Units.feetToMeters(17.8 * (actualWheelDiameter / nominalWheelDiameter));
+        maxLowGearSpeed = Units.feetToMeters(8.3 * (actualWheelDiameter / nominalWheelDiameter));
+        maxRotateSpeed = Units.degreesToRadians(360 * (12 * maxGroundSpeed)
+            / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength / 2, 2) + Math.pow(Robot.robotWidth / 2, 2)))));
         driveHighGearRatio = 6.42;
         driveLowGearRatio = 14.12;
         azimuthGearRatio = 15.6;
@@ -215,8 +216,8 @@ public class Drivetrain {
     // Store information in modulestates
     moduleStateOutputs = m_kinematics.toSwerveModuleStates(
         ChassisSpeeds.discretize(ChassisSpeeds.fromFieldRelativeSpeeds(
-            orientedStrafe[0], orientedStrafe[1], assistedRotation, m_pigeon.getRotation2d()), period));
-    SwerveDriveKinematics.desaturateWheelSpeeds(moduleStateOutputs, 1);
+            orientedStrafe[0] * maxGroundSpeed, orientedStrafe[1] * maxGroundSpeed, assistedRotation, m_pigeon.getRotation2d()), period));
+    SwerveDriveKinematics.desaturateWheelSpeeds(moduleStateOutputs, maxGroundSpeed);
 
     
 
@@ -244,27 +245,27 @@ public class Drivetrain {
 
     // Report to the dashboard
     Dashboard.swerve0Details.set(new double[] {
-        moduleStateOutputs[0].angle.getDegrees(),
+        moduleStates[0].angle.getDegrees()%360,
         module0.getTemp(),
-        moduleStateOutputs[0].speedMetersPerSecond,
+        moduleStates[0].speedMetersPerSecond,
         (module0.shifter.get() == Value.kForward) ? 1 : 0
     });
     Dashboard.swerve1Details.set(new double[] {
-        moduleStateOutputs[1].angle.getDegrees(),
+        moduleStates[1].angle.getDegrees()%360,
         module1.getTemp(),
-        moduleStateOutputs[1].speedMetersPerSecond,
+        moduleStates[1].speedMetersPerSecond,
         (module1.shifter.get() == Value.kForward) ? 1 : 0
     });
     Dashboard.swerve2Details.set(new double[] {
-        moduleStateOutputs[2].angle.getDegrees(),
+        moduleStates[2].angle.getDegrees()%360,
         module2.getTemp(),
-        moduleStateOutputs[2].speedMetersPerSecond,
+        moduleStates[2].speedMetersPerSecond,
         (module2.shifter.get() == Value.kForward) ? 1 : 0
     });
     Dashboard.swerve3Details.set(new double[] {
-        moduleStateOutputs[3].angle.getDegrees(),
+        moduleStates[3].angle.getDegrees()%360,
         module3.getTemp(),
-        moduleStateOutputs[3].speedMetersPerSecond,
+        moduleStates[3].speedMetersPerSecond,
         (module3.shifter.get() == Value.kForward) ? 1 : 0
     });
   }
@@ -414,5 +415,7 @@ public class Drivetrain {
     module1.updateOutputs(moduleStateOutputs[1], isAutonomous, fLow, driveFaults[1] || azimuthFaults[1], homeWheels);
     module2.updateOutputs(moduleStateOutputs[2], isAutonomous, fLow, driveFaults[2] || azimuthFaults[2], homeWheels);
     module3.updateOutputs(moduleStateOutputs[3], isAutonomous, fLow, driveFaults[3] || azimuthFaults[3], homeWheels);
+
+    
   }
 }

@@ -16,9 +16,11 @@ import com.revrobotics.SparkPIDController;
 import com.revrobotics.CANSparkBase.IdleMode;
 import com.revrobotics.SparkLimitSwitch;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
@@ -122,8 +124,10 @@ public class SwerveModule {
             azimuthPIDConfigs.kI = 0;
             azimuthPIDConfigs.kD = 0;
             this.azimuthTalon.getConfigurator().apply(azimuthPIDConfigs);
+            this.azimuthTalon.setPosition(0.0);
         }
 
+        this.drive.setPosition(0.0);
         this.drive.getConfigurator().apply(driveConfig);
     }
 
@@ -143,6 +147,7 @@ public class SwerveModule {
                 shiftedState = ShiftedStates.TRANS;
             }
         } else {
+
             boolean forwardLimit = azimuthTalon.getForwardLimit().getValue().equals(ForwardLimitValue.ClosedToGround);
             boolean reverseLimit = azimuthTalon.getReverseLimit().getValue().equals(ReverseLimitValue.ClosedToGround);
             if (forwardLimit && reverseLimit) {
@@ -243,12 +248,25 @@ public class SwerveModule {
                 fLow);
 
         // Output to azimuth
-        double normalAzimuthOutput = (homeWheels) ? 0 : moduleState.angle.getRotations() * azimuthRatio;
+        moduleState = SwerveModuleState.optimize(moduleState, new Rotation2d(azimuthAngle));
+
+        double normalAzimuthOutput = Units.rotationsToRadians(((homeWheels) ? 0 : moduleState.angle.getRotations()));
+
+        // Wrapping the angle to allow for "continuous input"
+        double minDistance = MathUtil.angleModulus(normalAzimuthOutput - azimuthAngle);
+        normalAzimuthOutput = Units.radiansToRotations(azimuthAngle + minDistance) * azimuthRatio;
+
         if (azimuthSparkActive) {
             ActuatorInterlocks.TAI_SparkMAX_Position(azimuthSpark, azimuthPidController,
                     "Azimuth_" + ((Integer) moduleNumber).toString() + "_(p)",
                     normalAzimuthOutput, 0.0);
         } else {
+            /* PID tuning code */
+            azimuthPIDConfigs.kP = Dashboard.freeTuningkP.get();
+            azimuthPIDConfigs.kI = Dashboard.freeTuningkI.get();
+            azimuthPIDConfigs.kD = Dashboard.freeTuningkD.get();
+            this.azimuthTalon.getConfigurator().apply(azimuthPIDConfigs);
+
             ActuatorInterlocks.TAI_TalonFX_Position(azimuthTalon,
                     "Azimuth_" + ((Integer) moduleNumber).toString() + "_(p)",
                     normalAzimuthOutput, 0.0);
@@ -277,7 +295,7 @@ public class SwerveModule {
 
         // Output drive
         ActuatorInterlocks.TAI_TalonFX_Power(drive, "Drive_" + ((Integer) moduleNumber).toString() + "_(p)",
-                moduleState.speedMetersPerSecond);
+                moduleState.speedMetersPerSecond / Drivetrain.maxGroundSpeed);
 
         // unlock drive motor if robot is disabled for more than 7 seconds or module
         // fails

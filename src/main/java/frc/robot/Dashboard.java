@@ -61,6 +61,9 @@ public class Dashboard {
     public static DoubleSubscriber testActuatorPeriod;
     public static DoubleSubscriber selectedDriver;
     public static DoubleSubscriber freeTuningVariable;
+    public static DoubleSubscriber freeTuningkP;
+    public static DoubleSubscriber freeTuningkI;
+    public static DoubleSubscriber freeTuningkD;
     public static BooleanSubscriber unlockAzimuth;
     public static BooleanSubscriber unlockElevator;
     public static BooleanSubscriber unlockWrist;
@@ -124,6 +127,8 @@ public class Dashboard {
         testActuatorValue = table.getDoubleTopic("Test_Actuator_Value").subscribe(0.0);
         testActuatorPeriod = table.getDoubleTopic("Test_Actuator_Period").subscribe(0.0);
         freeTuningVariable = table.getDoubleTopic("Free_Tuning_Variable").subscribe(0);
-
+        freeTuningkP = table.getDoubleTopic("Free_Tuning_PID_P").subscribe(0);
+        freeTuningkI = table.getDoubleTopic("Free_Tuning_PID_I").subscribe(0);
+        freeTuningkD = table.getDoubleTopic("Free_Tuning_PID_D").subscribe(0);
     }
 }
