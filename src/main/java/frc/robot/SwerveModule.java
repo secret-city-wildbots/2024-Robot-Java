@@ -1,6 +1,7 @@
 package frc.robot;
 
 import frc.robot.Utility.ActuatorInterlocks;
+import frc.robot.Utility.SwerveUtils;
 import frc.robot.Utility.ClassHelpers.Timer;
 
 import com.ctre.phoenix6.configs.Slot0Configs;
@@ -26,7 +27,6 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PneumaticsModuleType;
 import edu.wpi.first.wpilibj.DoubleSolenoid.Value;
 
-
 public class SwerveModule {
     enum ShiftedStates {
         LOW,
@@ -34,9 +34,9 @@ public class SwerveModule {
         HIGH
     }
 
-    private final double shiftToHighRPM = 4000;
-    private final double shiftToLowRPM = 500;
-    private static final double kWheelRadius = 0.0636;
+    private final double shiftToHigh_RPM = 4000;
+    private final double shiftToLow_RPM = 500;
+    private static double kWheelRadius_m;
 
     private final double driveHighGearRatio;
     private final double driveLowGearRatio;
@@ -53,7 +53,7 @@ public class SwerveModule {
     private SparkLimitSwitch azimuthReverseLimit;
     public final DoubleSolenoid shifter;
 
-    public ShiftedStates shiftedState = ShiftedStates.LOW;    
+    public ShiftedStates shiftedState = ShiftedStates.LOW;
 
     private boolean azimuthSparkActive;
 
@@ -99,6 +99,7 @@ public class SwerveModule {
         this.driveLowGearRatio = driveLowGearRatio;
         this.azimuthRatio = azimuthRatio;
         this.moduleNumber = moduleNumber;
+        kWheelRadius_m = Drivetrain.actualWheelDiameter_m/2;
 
         this.drive = new TalonFX(10 + moduleNumber, "canivore");
         this.azimuthTalon = new TalonFX(20 + moduleNumber, "canivore");
@@ -115,6 +116,8 @@ public class SwerveModule {
             azimuthSparkActive = true;
             this.azimuthForwardLimit = azimuthSpark.getForwardLimitSwitch(SparkLimitSwitch.Type.kNormallyOpen);
             this.azimuthReverseLimit = azimuthSpark.getReverseLimitSwitch(SparkLimitSwitch.Type.kNormallyOpen);
+            this.azimuthForwardLimit.enableLimitSwitch(false);
+            this.azimuthReverseLimit.enableLimitSwitch(false);
         }
 
         // Apply configs and set PIDs
@@ -131,14 +134,13 @@ public class SwerveModule {
         this.drive.getConfigurator().apply(driveConfig);
     }
 
-
-
     public SwerveModuleState updateSensors() {
         if (azimuthSparkActive) {
             azimuthAngle = azimuthEncoder.getPosition() / azimuthRatio * 2 * Math.PI;
             if (azimuthForwardLimit.isPressed() && azimuthReverseLimit.isPressed()) {
                 shiftedState = ShiftedStates.LOW;
-                System.out.println("Error: High and low sensor are triggered at the same time on module " + moduleNumber);
+                System.out
+                        .println("Error: High and low sensor are triggered at the same time on module " + moduleNumber);
             } else if (azimuthForwardLimit.isPressed()) {
                 shiftedState = ShiftedStates.HIGH;
             } else if (azimuthReverseLimit.isPressed()) {
@@ -163,7 +165,9 @@ public class SwerveModule {
             azimuthAngle = azimuthTalon.getRotorPosition().getValueAsDouble() / azimuthRatio * 2 * Math.PI;
         }
 
-        driveSpeed = drive.getVelocity().getValueAsDouble() / ((shiftedState.equals(ShiftedStates.HIGH)) ? driveHighGearRatio : driveLowGearRatio) * Math.PI * Drivetrain.actualWheelDiameter;
+        driveSpeed = drive.getVelocity().getValueAsDouble()
+                / ((shiftedState.equals(ShiftedStates.HIGH)) ? driveHighGearRatio : driveLowGearRatio) * 2 * Math.PI
+                * kWheelRadius_m;
 
         return new SwerveModuleState(driveSpeed, new Rotation2d(azimuthAngle));
     }
@@ -185,7 +189,7 @@ public class SwerveModule {
         return new SwerveModulePosition(
                 (drive.getRotorPosition().getValueAsDouble()
                         / ((shifter.get() == Value.kForward) ? driveHighGearRatio : driveLowGearRatio))
-                        * (2 * Math.PI * kWheelRadius),
+                        * (2 * Math.PI * kWheelRadius_m),
                 rotation);
     }
 
@@ -230,13 +234,13 @@ public class SwerveModule {
             } else {
                 if (shifterOutput0) {
                     // Currently commanded to high gear
-                    if (Math.abs(drive.getVelocity().getValueAsDouble()) > shiftToLowRPM) {
+                    if (Math.abs(drive.getVelocity().getValueAsDouble()) > shiftToLow_RPM) {
                         shiftThreshold.reset();
                     }
                     shifterOutput0 = shiftThreshold.getTimeMillis() < 150;
                 } else {
                     // Currently commanded to low gear
-                    if (Math.abs(drive.getVelocity().getValueAsDouble()) < shiftToHighRPM) {
+                    if (Math.abs(drive.getVelocity().getValueAsDouble()) < shiftToHigh_RPM) {
                         shiftThreshold.reset();
                     }
                     shifterOutput0 = shiftThreshold.getTimeMillis() > 150;
@@ -245,7 +249,7 @@ public class SwerveModule {
         }
         // Output to shifter
         ActuatorInterlocks.TAI_Solenoids(shifter, "Swerve_" + ((Integer) moduleNumber).toString() + "_Shifter_(b)",
-                fLow);
+                shifterOutput0);
 
         // Output to azimuth
         moduleState = SwerveModuleState.optimize(moduleState, new Rotation2d(azimuthAngle));
@@ -294,8 +298,10 @@ public class SwerveModule {
         
 
         // Output drive
+        double driveOutput = SwerveUtils.driveCommandToPower(moduleState, shifterOutput0);
+
         ActuatorInterlocks.TAI_TalonFX_Power(drive, "Drive_" + ((Integer) moduleNumber).toString() + "_(p)",
-                moduleState.speedMetersPerSecond / Drivetrain.maxGroundSpeed);
+                driveOutput);
 
         // unlock drive motor if robot is disabled for more than 7 seconds or module
         // fails

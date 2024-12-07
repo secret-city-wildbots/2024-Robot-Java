@@ -11,6 +11,7 @@ import frc.robot.Dashboard;
 import frc.robot.Drivetrain;
 import frc.robot.Robot;
 import frc.robot.Utility.ClassHelpers.DriverProfile;
+import edu.wpi.first.math.util.Units;
 
 public class SwerveUtils {
 
@@ -235,16 +236,9 @@ public class SwerveUtils {
    * @return Power output for DutyCycle command
    */
   public static double driveCommandToPower(SwerveModuleState moduleState, boolean shifterValue) {
-
-    // System.out.println("Value: " + Math.abs(moduleState.speedMetersPerSecond) * (Drivetrain.maxGroundSpeed / (Drivetrain.actualWheelDiameter / 3)));
-    // System.out.println("Spreadsheet[0][1]" + lowGearCalibration[1][1]);
-    // System.out.println(Control.interpolateCSV(
-    //     Math.abs(moduleState.speedMetersPerSecond) * (Drivetrain.maxGroundSpeed / (Drivetrain.actualWheelDiameter / 3)),
-    //     (shifterValue) ? highGearCalibration : lowGearCalibration));
-
-    return Math.signum(moduleState.speedMetersPerSecond) * Control.interpolateCSV(
-        Math.abs(moduleState.speedMetersPerSecond) * (Drivetrain.maxGroundSpeed / (Drivetrain.actualWheelDiameter / 3)),
-        (shifterValue) ? highGearCalibration : lowGearCalibration);
+    return Units.feetToMeters(Math.signum(moduleState.speedMetersPerSecond) * Control.interpolateCSV(
+        Units.metersToFeet(Math.abs(moduleState.speedMetersPerSecond) * (Drivetrain.actualWheelDiameter_m / Drivetrain.nominalWheelDiameter_m)),
+        (shifterValue) ? highGearCalibration : lowGearCalibration));
   }
 
 

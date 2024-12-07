@@ -29,11 +29,11 @@ public class Drivetrain {
   public static double driveHighGearRatio;
   public static double driveLowGearRatio;
   public static double azimuthGearRatio;
-  public static double maxGroundSpeed; // m/s
-  public static double maxLowGearSpeed; // m/s
-  public static double maxRotateSpeed; // rad/s
-  public static double actualWheelDiameter; // meters
-  public static double nominalWheelDiameter; // meters
+  public static double maxGroundSpeed_mPs; // m/s
+  public static double maxLowGearSpeed_mPs; // m/s
+  public static double maxRotateSpeed_radPs; // rad/s
+  public static double actualWheelDiameter_m; // meters
+  public static double nominalWheelDiameter_m; // meters
 
   private final TalonFXConfiguration[] driveConfigs = SwerveUtils.swerveModuleDriveConfigs();
   private final TalonFXConfiguration[] azimuthConfigs = SwerveUtils.swerveModuleAzimuthConfigs();
@@ -98,34 +98,33 @@ public class Drivetrain {
     // Check for driver profile
     switch (Robot.robotProfile) {
       case "2024_Robot":
-        nominalWheelDiameter = Units.inchesToMeters(5);
-        actualWheelDiameter = Units.inchesToMeters(4.53);
-        maxGroundSpeed = Units.feetToMeters(18.8 * (actualWheelDiameter / nominalWheelDiameter));
-        maxLowGearSpeed = Units.feetToMeters(9.2 * (actualWheelDiameter / nominalWheelDiameter));
-        maxRotateSpeed = Units.degreesToRadians(360 * (12 * maxGroundSpeed)
-            / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength / 2, 2) + Math.pow(Robot.robotWidth / 2, 2)))));
+        nominalWheelDiameter_m = Units.inchesToMeters(5);
+        actualWheelDiameter_m = Units.inchesToMeters(4.53);
+        maxGroundSpeed_mPs = Units.feetToMeters(18.8 * (actualWheelDiameter_m / nominalWheelDiameter_m));
+        maxLowGearSpeed_mPs = Units.feetToMeters(9.2 * (actualWheelDiameter_m / nominalWheelDiameter_m));
+        maxRotateSpeed_radPs = maxGroundSpeed_mPs / ((Math.sqrt(Math.pow(Robot.robotLength_m / 2, 2) + Math.pow(Robot.robotWidth_m / 2, 2))));
         driveHighGearRatio = 7.13;
         driveLowGearRatio = 14.66;
         azimuthGearRatio = 16;
         break;
       case "Steve2":
-        nominalWheelDiameter = Units.inchesToMeters(5);
-        actualWheelDiameter = Units.inchesToMeters(4.78);
-        maxGroundSpeed = Units.feetToMeters(17.8 * (actualWheelDiameter / nominalWheelDiameter));
-        maxLowGearSpeed = Units.feetToMeters(8.3 * (actualWheelDiameter / nominalWheelDiameter));
-        maxRotateSpeed = Units.degreesToRadians(360 * (12 * maxGroundSpeed)
-            / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength / 2, 2) + Math.pow(Robot.robotWidth / 2, 2)))));
+        nominalWheelDiameter_m = Units.inchesToMeters(5);
+        actualWheelDiameter_m = Units.inchesToMeters(4.78);
+        maxGroundSpeed_mPs = Units.feetToMeters(17.8 * (actualWheelDiameter_m / nominalWheelDiameter_m));
+        maxLowGearSpeed_mPs = Units.feetToMeters(8.3 * (actualWheelDiameter_m / nominalWheelDiameter_m));
+        maxRotateSpeed_radPs = Units.degreesToRadians(360 * (12 * maxGroundSpeed_mPs)
+            / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength_m / 2, 2) + Math.pow(Robot.robotWidth_m / 2, 2)))));
         driveHighGearRatio = 6.42;
         driveLowGearRatio = 14.12;
         azimuthGearRatio = 15.6;
         break;
       default:
-        nominalWheelDiameter = Units.inchesToMeters(5);
-        actualWheelDiameter = Units.inchesToMeters(4.78);
-        maxGroundSpeed = Units.feetToMeters(17.8 * (actualWheelDiameter / nominalWheelDiameter));
-        maxLowGearSpeed = Units.feetToMeters(8.3 * (actualWheelDiameter / nominalWheelDiameter));
-        maxRotateSpeed = Units.degreesToRadians(360 * (12 * maxGroundSpeed)
-            / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength / 2, 2) + Math.pow(Robot.robotWidth / 2, 2)))));
+        nominalWheelDiameter_m = Units.inchesToMeters(5);
+        actualWheelDiameter_m = Units.inchesToMeters(4.78);
+        maxGroundSpeed_mPs = Units.feetToMeters(17.8 * (actualWheelDiameter_m / nominalWheelDiameter_m));
+        maxLowGearSpeed_mPs = Units.feetToMeters(8.3 * (actualWheelDiameter_m / nominalWheelDiameter_m));
+        maxRotateSpeed_radPs = Units.degreesToRadians(360 * (12 * maxGroundSpeed_mPs)
+            / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength_m / 2, 2) + Math.pow(Robot.robotWidth_m / 2, 2)))));
         driveHighGearRatio = 6.42;
         driveLowGearRatio = 14.12;
         azimuthGearRatio = 15.6;
@@ -216,19 +215,9 @@ public class Drivetrain {
     // Store information in modulestates
     moduleStateOutputs = m_kinematics.toSwerveModuleStates(
         ChassisSpeeds.discretize(ChassisSpeeds.fromFieldRelativeSpeeds(
-            orientedStrafe[0] * maxGroundSpeed, orientedStrafe[1] * maxGroundSpeed, assistedRotation, m_pigeon.getRotation2d()), period));
-    SwerveDriveKinematics.desaturateWheelSpeeds(moduleStateOutputs, maxGroundSpeed);
+            orientedStrafe[0] * maxGroundSpeed_mPs, orientedStrafe[1] * maxGroundSpeed_mPs, assistedRotation, m_pigeon.getRotation2d()), period));
+    SwerveDriveKinematics.desaturateWheelSpeeds(moduleStateOutputs, maxGroundSpeed_mPs);
 
-    
-
-    moduleStateOutputs[0].speedMetersPerSecond = SwerveUtils.driveCommandToPower(moduleStateOutputs[0],
-        module0.shifter.get() == Value.kForward);
-    moduleStateOutputs[1].speedMetersPerSecond = SwerveUtils.driveCommandToPower(moduleStateOutputs[1],
-        module1.shifter.get() == Value.kForward);
-    moduleStateOutputs[2].speedMetersPerSecond = SwerveUtils.driveCommandToPower(moduleStateOutputs[2],
-        module2.shifter.get() == Value.kForward);
-    moduleStateOutputs[3].speedMetersPerSecond = SwerveUtils.driveCommandToPower(moduleStateOutputs[3],
-        module3.shifter.get() == Value.kForward);
 
     double[] loggingState = new double[] {
       moduleStateOutputs[1].angle.getDegrees(),
@@ -369,7 +358,7 @@ public class Drivetrain {
         driverHeadingFudge = 0.0;
         driverHeadingFudge0 = 0.0;
       } else {
-        driverHeadingFudge = headingFudgeDeltaT * maxRotateSpeed
+        driverHeadingFudge = headingFudgeDeltaT * Units.radiansToDegrees(maxRotateSpeed_radPs)
             * SwerveUtils.readDriverProfiles(currentProfile).rotateMax * joystickRotation;
         driverHeadingFudge0 += driverHeadingFudge;
       }

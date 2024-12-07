@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj.XboxController;
 import frc.robot.Utility.FileHelpers;
 import frc.robot.Utility.SwerveUtils;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.util.Units;
 
 public class Robot extends TimedRobot {
 
@@ -26,8 +27,8 @@ public class Robot extends TimedRobot {
 
   public static MasterStates masterState = MasterStates.STOWED;
 
-  public static double robotLength;
-  public static double robotWidth;
+  public static double robotLength_m;
+  public static double robotWidth_m;
 
   public static double loopTime = 20;
 
@@ -65,8 +66,8 @@ public class Robot extends TimedRobot {
     Dashboard.legalActuatorNames.set(actuatorNames);
     Dashboard.legalDrivers.set(legalDrivers);
     if (robotProfile.equals("2024_Robot")) {
-      robotLength = 19;
-      robotWidth = 23;
+      robotLength_m = Units.inchesToMeters(19);
+      robotWidth_m = Units.inchesToMeters(23);
     }
     Dashboard.robotProfile.set(robotProfile);
     Dashboard.codeVersion.set(codeVersion);
