@@ -38,6 +38,13 @@ public class Intake {
     private final SparkAbsoluteEncoder indexEncoder = indexer.getAbsoluteEncoder();
     private final SparkLimitSwitch beamBreak = indexer.getForwardLimitSwitch(Type.kNormallyOpen);
 
+    /**
+     * Creates a new intake object
+     * 
+     * @param innerPower   The output power between -1 and 1 for the central intake
+     * @param outerPower   The output power between -1 and 1 for the outer intakes
+     * @param indexerPower The output power between -1 and 1 for the indexer
+     */
     public Intake(
             double innerPower,
             double outerPower,
@@ -54,6 +61,10 @@ public class Intake {
         beamBreak.enableLimitSwitch(true);
     }
 
+    /**
+     * Reads in sensor and motor values and stores them internally in the intake
+     * object
+     */
     public void updateSensors() {
         bbBroken = beamBreak.isPressed();
         Dashboard.beambreak.set(bbBroken);
@@ -71,6 +82,11 @@ public class Intake {
         Dashboard.indexerTemp.set(indexerTemp);
     }
 
+    /**
+     * Updates intake values in the intake object to use for motor outputs
+     * 
+     * @param driveController
+     */
     public void updateIntake(XboxController driveController) {
         // Turns off intake and allow indexing when note is picked up
         if (bbBroken) {
@@ -87,6 +103,12 @@ public class Intake {
                 (bbBroken && (driveController.getRightTriggerAxis() > 0.7) && Shooter.spunUp);
     }
 
+    /**
+     * Directly toggles the intake on or off
+     * Always toggles off if currently on
+     * Only toggles on if no note is currently picked up and wrist and elevator are
+     * stowed
+     */
     public void toggle() {
         if (enabled) {
             enabled = false;
@@ -101,6 +123,9 @@ public class Intake {
         }
     }
 
+    /**
+     * Uses stored values in the intake object to send to motors for outputs
+     */
     public void updateOutputs() {
         Dashboard.intaking.set(enabled);
         ActuatorInterlocks.TAI_TalonFX_Power(inner, "Center_Intake_(p)", (enabled) ? innerIntakePower : 0);

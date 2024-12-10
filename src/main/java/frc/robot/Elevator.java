@@ -35,6 +35,9 @@ public class Elevator {
 
     private boolean unlockElevator0 = false;
 
+    /**
+     * Creates a new elevator object
+     */
     public Elevator() {
         switch (Robot.robotProfile) {
             case "2024_Robot":
@@ -64,6 +67,9 @@ public class Elevator {
         elevatorFeedForward = 32.17 * 20 * elevatorArbitraryFFScalar;
     }
 
+    /**
+     * Reads in motor values and stores them in the elevator object
+     */
     public void updateSensors() {
         height = elevator.getPosition().getValueAsDouble() / elevatorRatio;
         Dashboard.elevatorPosition.set(height);
@@ -72,6 +78,9 @@ public class Elevator {
         climbed = Math.abs(height - elevatorOutput) < allowedError;
     }
 
+    /**
+     * Updates stored values in the elevator object to use for motor outputs
+     */
     public void updateElevator() {
         switch (Robot.masterState) {
             case STOWED:
@@ -90,6 +99,10 @@ public class Elevator {
         }
     }
 
+    /**
+     * Takes stored values in elevator object and send outputs to motors
+     * Also sets brake/coast mode for elevator motor
+     */
     public void updateOutputs() {
         if (!ActuatorInterlocks.isTesting()) {
             elevator.setControl(elevatorControlRequest

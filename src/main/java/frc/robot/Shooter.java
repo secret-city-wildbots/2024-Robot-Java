@@ -12,6 +12,7 @@ import com.ctre.phoenix6.signals.ReverseLimitValue;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.XboxController;
 
 public class Shooter {
@@ -31,12 +32,12 @@ public class Shooter {
     private double shooterRatio;
     private boolean spin = false;
 
-    public double rightTemp = -1;
-    public double leftTemp = -1;
-    public double wristTemp = -1;
-    public double rightVelocity = -1;
-    public double leftVelocity = -1;
-    public double wristAngle = -1;
+    public double rightTemp_C = -1;
+    public double leftTemp_C = -1;
+    public double wristTemp_C = -1;
+    public double rightVelocity_rotPm = -1;
+    public double leftVelocity_rotPm = -1;
+    public double wristAngle_rad = -1;
 
     public static boolean spunUp = false;
 
@@ -60,9 +61,14 @@ public class Shooter {
 
     private boolean unlockWrist0 = false;
 
+    /**
+     * Creates a new shooter object
+     * @param shooterPower The default power for the right motor
+     * @param shooterRatio The ratio between the speed of the right and left motor
+     */
     public Shooter(
-            double shootPower,
-            double shooterWheelRatio) {
+            double shooterPower,
+            double shooterRatio) {
 
         switch (Robot.robotProfile) {
             case "2024_Robot":
@@ -75,8 +81,8 @@ public class Shooter {
                 wristRatio = 98;
         }
 
-        shooterPower = shootPower;
-        shooterRatio = shooterWheelRatio;
+        this.shooterPower = shooterPower;
+        this.shooterRatio = shooterRatio;
 
         wristConfig.MotorOutput.Inverted = InvertedValue.Clockwise_Positive;
         wristConfig.MotorOutput.NeutralMode = NeutralModeValue.Brake;
@@ -98,39 +104,43 @@ public class Shooter {
     }
 
     /**
-     * Retreives all sensor values for the shooter motors and wrist to use for other
-     * functions
+     * Retreives all sensor values for the shooter motors and wrist and stores them in the shooter object
      */
     public void updateSensors() {
         // Read in motor sensor values (velocity, temperature, and limit switches)
-        rightTemp = right.getDeviceTemp().getValueAsDouble();
-        leftTemp = left.getDeviceTemp().getValueAsDouble();
+        rightTemp_C = right.getDeviceTemp().getValueAsDouble();
+        leftTemp_C = left.getDeviceTemp().getValueAsDouble();
 
-        rightVelocity = right.getRotorVelocity().getValueAsDouble() * 60;
-        leftVelocity = left.getRotorVelocity().getValueAsDouble() * 60;
+        rightVelocity_rotPm = right.getRotorVelocity().getValueAsDouble() / 60;
+        leftVelocity_rotPm = left.getRotorVelocity().getValueAsDouble() / 60;
 
         wristStowed = wrist.getReverseLimit().getValue().equals(ReverseLimitValue.ClosedToGround);
-        wristAngle = wrist.getRotorPosition().getValueAsDouble() * 360 / wristRatio; // rotations -> degrees
+        wristAngle_rad = Units.rotationsToRadians(wrist.getRotorPosition().getValueAsDouble() / wristRatio);
 
-        wristTemp = wrist.getDeviceTemp().getValueAsDouble();
+        wristTemp_C = wrist.getDeviceTemp().getValueAsDouble();
 
         // Decide whether or not the shooter wheels are spun up enough
-        if ((rightVelocity > (0.8 * shooterPower) * 6000)
-                && (leftVelocity > (0.8 * shooterPower * shooterRatio) * 6000)) {
+        if ((rightVelocity_rotPm > (0.8 * shooterPower) * 6000)
+                && (leftVelocity_rotPm > (0.8 * shooterPower * shooterRatio) * 6000)) {
             spunUp = true;
         }
 
         // Report values to the dashboard
-        Dashboard.shooterTemps.set(new double[] { leftTemp, rightTemp });
-        Dashboard.shooterVelocities.set(new double[] { leftVelocity, rightVelocity });
-        Dashboard.wristPosition.set(wristAngle);
-        Dashboard.wristTemp.set(wristTemp);
+        Dashboard.shooterTemps.set(new double[] { leftTemp_C, rightTemp_C });
+        Dashboard.shooterVelocities.set(new double[] { leftVelocity_rotPm, rightVelocity_rotPm });
+        Dashboard.wristPosition.set(Units.radiansToDegrees(wristAngle_rad));
+        Dashboard.wristTemp.set(wristTemp_C);
 
         // The sin of the wrist angle * wrist COG * gravity * Wrist mass * arbitrary
         // scalar
-        wristFeedForward = Math.sin((wristAngle + 36) / 180 * Math.PI) * 0.5 * 32.17 * 20 * wristArbitraryFFScalar;        
+        wristFeedForward = Math.sin(wristAngle_rad + 0.628) * 0.5 * 32.17 * 20 * wristArbitraryFFScalar;        
     }
 
+    /**
+     * Updates the stored values in the shooter object for output to the wrist motor
+     * @param robotPosition
+     * @param manipController
+     */
     public void updateWrist(Pose2d robotPosition, XboxController manipController) {
         if (manipController.getYButtonPressed()) {
             state = ShooterStates.TACO;
@@ -171,6 +181,9 @@ public class Shooter {
         }
     }
 
+    /**
+     * Updates the stored values in the shooter object to output to the shooter motors
+     */
     public void updateShooter(boolean rightTrigger, boolean leftTrigger, Pose2d robotPosition, boolean haveNote) {
         if (leftTrigger || rightTrigger) {
             spin = true;
@@ -183,10 +196,19 @@ public class Shooter {
         }
     }
 
+    /**
+     * Interpolates the wrist calibration CSV to find the correct wrist angle based on the distance from target
+     * @param robotPosition
+     * @return
+     */
     private double calculateWristAngle(Pose2d robotPosition) {
         return Control.interpolateCSV(robotPosition.getY(), wristCalibrations);
     }
 
+    /**
+     * Takes stored values in the shooter object and outputs them to shooter and wrist motors
+     * Also updates brake/coast mode for wrist motor
+     */
     public void updateOutputs() {
         ActuatorInterlocks.TAI_TalonFX_Power(right, "Shooter_Right_(p)", (spin) ? shooterPower : 0);
         ActuatorInterlocks.TAI_TalonFX_Power(left, "Shooter_Left_(p)", (spin) ? shooterPower * shooterRatio : 0);

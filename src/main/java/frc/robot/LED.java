@@ -231,6 +231,9 @@ public class LED {
 
     }
 
+    /**
+     * Sends stored values in the LED object to leds
+     */
     public void updateOutputs() {
         if (m_ledBuffer != priorLedBuffer) {
             m_led.setData(m_ledBuffer);

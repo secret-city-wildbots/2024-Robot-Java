@@ -34,8 +34,8 @@ public class SwerveModule {
         HIGH
     }
 
-    private final double shiftToHigh_RPM = 4000;
-    private final double shiftToLow_RPM = 500;
+    private final double shiftToHigh_radPs = Units.rotationsPerMinuteToRadiansPerSecond(4000);
+    private final double shiftToLow_radPs = Units.rotationsPerMinuteToRadiansPerSecond(500);
     private static double kWheelRadius_m;
 
     private final double driveHighGearRatio;
@@ -61,11 +61,11 @@ public class SwerveModule {
     private boolean unlockAzimuth0 = false;
     private boolean shifterOutput0 = false;
     private boolean unlockDrive0 = false;
-    Timer shiftThreshold = new Timer();
-    Timer robotDisabled = new Timer();
+    private Timer shiftThreshold = new Timer();
+    private Timer robotDisabled = new Timer();
 
-    private double driveSpeed = 0;
-    private double azimuthAngle = 0;
+    private double currentDriveSpeed_mPs = 0;
+    private double azimuthAngle_rad = 0;
 
     /**
      * Creates a new swerve module object
@@ -99,7 +99,7 @@ public class SwerveModule {
         this.driveLowGearRatio = driveLowGearRatio;
         this.azimuthRatio = azimuthRatio;
         this.moduleNumber = moduleNumber;
-        kWheelRadius_m = Drivetrain.actualWheelDiameter_m/2;
+        kWheelRadius_m = Drivetrain.actualWheelDiameter_m / 2;
 
         this.drive = new TalonFX(10 + moduleNumber, "canivore");
         this.azimuthTalon = new TalonFX(20 + moduleNumber, "canivore");
@@ -136,7 +136,7 @@ public class SwerveModule {
 
     public SwerveModuleState updateSensors() {
         if (azimuthSparkActive) {
-            azimuthAngle = azimuthEncoder.getPosition() / azimuthRatio * 2 * Math.PI;
+            azimuthAngle_rad = Units.rotationsToRadians(azimuthEncoder.getPosition() / azimuthRatio);
             if (azimuthForwardLimit.isPressed() && azimuthReverseLimit.isPressed()) {
                 shiftedState = ShiftedStates.LOW;
                 System.out
@@ -154,7 +154,8 @@ public class SwerveModule {
             boolean reverseLimit = azimuthTalon.getReverseLimit().getValue().equals(ReverseLimitValue.ClosedToGround);
             if (forwardLimit && reverseLimit) {
                 shiftedState = ShiftedStates.LOW;
-                System.out.println("Error: High and low sensor are triggered at the same time on module " + moduleNumber);
+                System.out
+                        .println("Error: High and low sensor are triggered at the same time on module " + moduleNumber);
             } else if (forwardLimit) {
                 shiftedState = ShiftedStates.HIGH;
             } else if (reverseLimit) {
@@ -162,14 +163,15 @@ public class SwerveModule {
             } else {
                 shiftedState = ShiftedStates.TRANS;
             }
-            azimuthAngle = azimuthTalon.getRotorPosition().getValueAsDouble() / azimuthRatio * 2 * Math.PI;
+            azimuthAngle_rad = Units
+                    .rotationsToRadians(azimuthTalon.getRotorPosition().getValueAsDouble() / azimuthRatio);
         }
 
-        driveSpeed = drive.getVelocity().getValueAsDouble()
+        currentDriveSpeed_mPs = drive.getVelocity().getValueAsDouble()
                 / ((shiftedState.equals(ShiftedStates.HIGH)) ? driveHighGearRatio : driveLowGearRatio) * 2 * Math.PI
                 * kWheelRadius_m;
 
-        return new SwerveModuleState(driveSpeed, new Rotation2d(azimuthAngle));
+        return new SwerveModuleState(currentDriveSpeed_mPs, new Rotation2d(azimuthAngle_rad));
     }
 
     /**
@@ -234,13 +236,14 @@ public class SwerveModule {
             } else {
                 if (shifterOutput0) {
                     // Currently commanded to high gear
-                    if (Math.abs(drive.getVelocity().getValueAsDouble()) > shiftToLow_RPM) {
+                    if (Units.rotationsToRadians(Math.abs(drive.getVelocity().getValueAsDouble())) > shiftToLow_radPs) {
                         shiftThreshold.reset();
                     }
                     shifterOutput0 = shiftThreshold.getTimeMillis() < 150;
                 } else {
                     // Currently commanded to low gear
-                    if (Math.abs(drive.getVelocity().getValueAsDouble()) < shiftToHigh_RPM) {
+                    if (Units
+                            .rotationsToRadians(Math.abs(drive.getVelocity().getValueAsDouble())) < shiftToHigh_radPs) {
                         shiftThreshold.reset();
                     }
                     shifterOutput0 = shiftThreshold.getTimeMillis() > 150;
@@ -252,18 +255,18 @@ public class SwerveModule {
                 shifterOutput0);
 
         // Output to azimuth
-        moduleState = SwerveModuleState.optimize(moduleState, new Rotation2d(azimuthAngle));
+        moduleState = SwerveModuleState.optimize(moduleState, new Rotation2d(azimuthAngle_rad));
 
-        double normalAzimuthOutput = Units.rotationsToRadians(((homeWheels) ? 0 : moduleState.angle.getRotations()));
+        double normalAzimuthOutput_rad = ((homeWheels) ? 0 : moduleState.angle.getRadians());
 
         // Wrapping the angle to allow for "continuous input"
-        double minDistance = MathUtil.angleModulus(normalAzimuthOutput - azimuthAngle);
-        normalAzimuthOutput = Units.radiansToRotations(azimuthAngle + minDistance) * azimuthRatio;
+        double minDistance = MathUtil.angleModulus(normalAzimuthOutput_rad - azimuthAngle_rad);
+        double normalAzimuthOutput_rot = Units.radiansToRotations(azimuthAngle_rad + minDistance) * azimuthRatio;
 
         if (azimuthSparkActive) {
             ActuatorInterlocks.TAI_SparkMAX_Position(azimuthSpark, azimuthPidController,
                     "Azimuth_" + ((Integer) moduleNumber).toString() + "_(p)",
-                    normalAzimuthOutput, 0.0);
+                    normalAzimuthOutput_rot, 0.0);
         } else {
             /* PID tuning code */
             azimuthPIDConfigs.kP = Dashboard.freeTuningkP.get();
@@ -273,7 +276,7 @@ public class SwerveModule {
 
             ActuatorInterlocks.TAI_TalonFX_Position(azimuthTalon,
                     "Azimuth_" + ((Integer) moduleNumber).toString() + "_(p)",
-                    normalAzimuthOutput, 0.0);
+                    normalAzimuthOutput_rot, 0.0);
         }
 
         // Decide whether to put azimuth in coast mode
@@ -294,8 +297,6 @@ public class SwerveModule {
             }
         }
         unlockAzimuth0 = unlockAzimuth;
-
-        
 
         // Output drive
         double driveOutput = SwerveUtils.driveCommandToPower(moduleState, shifterOutput0);
