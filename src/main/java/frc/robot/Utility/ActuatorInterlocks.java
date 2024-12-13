@@ -104,7 +104,6 @@ public class ActuatorInterlocks {
         if (testingActuator.equals("No_Test")) {
             PositionDutyCycle controlRequest = new PositionDutyCycle(normalOutput);
             controlRequest.FeedForward = normalFF;
-            System.out.println(normalOutput);
             motor.setControl(controlRequest);
         } else if (testingActuator.equals(actuatorName)) {
             if (testingPeriod < 0.001) {

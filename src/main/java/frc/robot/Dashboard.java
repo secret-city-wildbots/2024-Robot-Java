@@ -69,6 +69,7 @@ public class Dashboard {
     public static BooleanSubscriber unlockWrist;
     public static BooleanSubscriber applyProfileSetpoints;
     public static BooleanSubscriber homeWheels;
+    public static BooleanSubscriber calibrateWheels;
 
     /**
      * Creates an object for storing dashboard publishers and subscribers
@@ -90,6 +91,7 @@ public class Dashboard {
         selectedDriver = table.getDoubleTopic("Selected_Driver").subscribe(0.0);
         unlockAzimuth = table.getBooleanTopic("Unlock_Azimuth").subscribe(false);
         homeWheels = table.getBooleanTopic("Home_Wheels").subscribe(false);
+        calibrateWheels = table.getBooleanTopic("Calibrate_Wheels").subscribe(false);
         applyProfileSetpoints = table.getBooleanTopic("Apply_Driver_Profile_Setpoints").subscribe(false);
 
         // Shooter subsystem

@@ -32,7 +32,7 @@ public class Robot extends TimedRobot {
 
   public static double loopTime = 20;
 
-  private final Drivetrain drivetrain = new Drivetrain();
+  private final Drivetrain drivetrain;
   private final XboxController driverController = new XboxController(0);
   private final XboxController manipController = new XboxController(1);
   private final Intake intake = new Intake(0.5, 0.5, 0.2);
@@ -65,10 +65,20 @@ public class Robot extends TimedRobot {
     // Initialize dashboard values
     Dashboard.legalActuatorNames.set(actuatorNames);
     Dashboard.legalDrivers.set(legalDrivers);
-    if (robotProfile.equals("2024_Robot")) {
-      robotLength_m = Units.inchesToMeters(19);
-      robotWidth_m = Units.inchesToMeters(23);
+    switch (Robot.robotProfile) {
+      case "2024_Robot":
+        robotLength_m = Units.inchesToMeters(19);
+        robotWidth_m = Units.inchesToMeters(23);
+        break;
+      case "Steve2":
+        robotLength_m = Units.inchesToMeters(19);
+        robotWidth_m = Units.inchesToMeters(23);
+        break;
+      default:
+        robotLength_m = Units.inchesToMeters(19);
+        robotWidth_m = Units.inchesToMeters(23);
     }
+    drivetrain = new Drivetrain();
     Dashboard.robotProfile.set(robotProfile);
     Dashboard.codeVersion.set(codeVersion);
     Dashboard.currentDriverProfileSetpoints

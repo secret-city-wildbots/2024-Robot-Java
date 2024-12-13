@@ -67,6 +67,11 @@ public class SwerveModule {
     private double currentDriveSpeed_mPs = 0;
     private double azimuthAngle_rad = 0;
 
+    // Prior loop kp, i, and d tracking
+    private double kp0 = 0;
+    private double ki0 = 0;
+    private double kd0 = 0;
+
     /**
      * Creates a new swerve module object
      * 
@@ -150,8 +155,8 @@ public class SwerveModule {
             }
         } else {
 
-            boolean forwardLimit = azimuthTalon.getForwardLimit().getValue().equals(ForwardLimitValue.ClosedToGround);
-            boolean reverseLimit = azimuthTalon.getReverseLimit().getValue().equals(ReverseLimitValue.ClosedToGround);
+            boolean forwardLimit = drive.getForwardLimit().getValue().equals(ForwardLimitValue.ClosedToGround);
+            boolean reverseLimit = drive.getReverseLimit().getValue().equals(ReverseLimitValue.ClosedToGround);
             if (forwardLimit && reverseLimit) {
                 shiftedState = ShiftedStates.LOW;
                 System.out
@@ -267,12 +272,25 @@ public class SwerveModule {
             ActuatorInterlocks.TAI_SparkMAX_Position(azimuthSpark, azimuthPidController,
                     "Azimuth_" + ((Integer) moduleNumber).toString() + "_(p)",
                     normalAzimuthOutput_rot, 0.0);
+            if (Dashboard.calibrateWheels.get()) {
+                azimuthEncoder.setZeroOffset(azimuthEncoder.getPosition());
+            }
         } else {
             /* PID tuning code */
-            azimuthPIDConfigs.kP = Dashboard.freeTuningkP.get();
-            azimuthPIDConfigs.kI = Dashboard.freeTuningkI.get();
-            azimuthPIDConfigs.kD = Dashboard.freeTuningkD.get();
-            this.azimuthTalon.getConfigurator().apply(azimuthPIDConfigs);
+            double kp = Dashboard.freeTuningkP.get();
+            double ki = Dashboard.freeTuningkI.get();
+            double kd = Dashboard.freeTuningkD.get();
+            if ((kp0 != kp) || (ki0 != ki) || (kd0 != kd)) {
+                azimuthPIDConfigs.kP = kp;
+                azimuthPIDConfigs.kI = ki;
+                azimuthPIDConfigs.kD = kd;
+                this.azimuthTalon.getConfigurator().apply(azimuthPIDConfigs);
+                kp0 = kp;
+            }
+
+            if (Dashboard.calibrateWheels.get()) {
+                azimuthTalon.setPosition(0.0);
+            }
 
             ActuatorInterlocks.TAI_TalonFX_Position(azimuthTalon,
                     "Azimuth_" + ((Integer) moduleNumber).toString() + "_(p)",
