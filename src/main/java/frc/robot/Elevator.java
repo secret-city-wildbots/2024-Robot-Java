@@ -2,7 +2,6 @@ package frc.robot;
 
 import com.ctre.phoenix6.configs.MotionMagicConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.PositionDutyCycle;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
 //import com.ctre.phoenix6.signals.ReverseLimitValue;
@@ -27,13 +26,19 @@ public class Elevator {
     private double elevatorOutput = 0; // inches
     private final double allowedError = 0.2; // inches
 
-    private PIDController elevatorController = new PIDController(0, 0, 0);
+    private PIDController elevatorController = new PIDController(0.06, 0, 0);
 
     private MotionMagicConfigs motionMagicConfigs = elevatorConfig.MotionMagic;
 
-    private final PositionDutyCycle elevatorControlRequest = new PositionDutyCycle(0).withSlot(0);
-
     private boolean unlockElevator0 = false;
+
+    // Prior loop kp, i, and d tracking
+    @SuppressWarnings("unused")
+    private double kp0 = 0.12;
+    @SuppressWarnings("unused")
+    private double ki0 = 0;
+    @SuppressWarnings("unused")
+    private double kd0 = 0;
 
     /**
      * Creates a new elevator object
@@ -104,13 +109,22 @@ public class Elevator {
      * Also sets brake/coast mode for elevator motor
      */
     public void updateOutputs() {
-        if (!ActuatorInterlocks.isTesting()) {
-            elevator.setControl(elevatorControlRequest
-                    .withPosition(elevatorOutput * elevatorRatio)
-                    .withFeedForward(elevatorFeedForward));
-        } else {
-            ActuatorInterlocks.TAI_TalonFX_Power(elevator, "Elevator_(p)", 0.0);
-        }
+        /* PID tuning code START */
+            double kp = Dashboard.freeTuningkP.get();
+            double ki = Dashboard.freeTuningkI.get();
+            double kd = Dashboard.freeTuningkD.get();
+            if ((kp0 != kp) || (ki0 != ki) || (kd0 != kd)) {
+                elevatorConfig.Slot0.kP = kp;
+                elevatorConfig.Slot0.kI = ki;
+                elevatorConfig.Slot0.kD = kd;
+                this.elevator.getConfigurator().apply(elevatorConfig);
+                kp0 = kp;
+                ki0 = ki;
+                kd0 = kd;
+            }
+            /* PID tuning code END */
+
+        ActuatorInterlocks.TAI_TalonFX_Position(elevator, "Elevator_(p)", Dashboard.freeTuningVariable.get() * elevatorRatio, elevatorFeedForward);
 
         // Put elevator in coast while unlocked and only when changed
         boolean unlockElevator = Dashboard.unlockElevator.get();

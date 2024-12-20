@@ -288,6 +288,8 @@ public class SwerveModule {
             //     azimuthPIDConfigs.kD = kd;
             //     this.azimuthTalon.getConfigurator().apply(azimuthPIDConfigs);
             //     kp0 = kp;
+            //     ki0 = ki;
+            //     kd0 = kd;
             // }
             /* PID tuning code END */
 
