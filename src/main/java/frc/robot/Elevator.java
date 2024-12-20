@@ -110,18 +110,18 @@ public class Elevator {
      */
     public void updateOutputs() {
         /* PID tuning code START */
-            double kp = Dashboard.freeTuningkP.get();
-            double ki = Dashboard.freeTuningkI.get();
-            double kd = Dashboard.freeTuningkD.get();
-            if ((kp0 != kp) || (ki0 != ki) || (kd0 != kd)) {
-                elevatorConfig.Slot0.kP = kp;
-                elevatorConfig.Slot0.kI = ki;
-                elevatorConfig.Slot0.kD = kd;
-                this.elevator.getConfigurator().apply(elevatorConfig);
-                kp0 = kp;
-                ki0 = ki;
-                kd0 = kd;
-            }
+            // double kp = Dashboard.freeTuningkP.get();
+            // double ki = Dashboard.freeTuningkI.get();
+            // double kd = Dashboard.freeTuningkD.get();
+            // if ((kp0 != kp) || (ki0 != ki) || (kd0 != kd)) {
+            //     elevatorConfig.Slot0.kP = kp;
+            //     elevatorConfig.Slot0.kI = ki;
+            //     elevatorConfig.Slot0.kD = kd;
+            //     this.elevator.getConfigurator().apply(elevatorConfig);
+            //     kp0 = kp;
+            //     ki0 = ki;
+            //     kd0 = kd;
+            // }
             /* PID tuning code END */
 
         ActuatorInterlocks.TAI_TalonFX_Position(elevator, "Elevator_(p)", Dashboard.freeTuningVariable.get() * elevatorRatio, elevatorFeedForward);
