@@ -68,8 +68,11 @@ public class SwerveModule {
     private double azimuthAngle_rad = 0;
 
     // Prior loop kp, i, and d tracking
-    private double kp0 = 0;
+    @SuppressWarnings("unused")
+    private double kp0 = 0.12;
+    @SuppressWarnings("unused")
     private double ki0 = 0;
+    @SuppressWarnings("unused")
     private double kd0 = 0;
 
     /**
@@ -128,7 +131,7 @@ public class SwerveModule {
         // Apply configs and set PIDs
         if (!azimuthSparkActive) {
             this.azimuthTalon.getConfigurator().apply(azimuthConfig);
-            azimuthPIDConfigs.kP = 0;
+            azimuthPIDConfigs.kP = 0.12;
             azimuthPIDConfigs.kI = 0;
             azimuthPIDConfigs.kD = 0;
             this.azimuthTalon.getConfigurator().apply(azimuthPIDConfigs);
@@ -159,8 +162,7 @@ public class SwerveModule {
             boolean reverseLimit = drive.getReverseLimit().getValue().equals(ReverseLimitValue.ClosedToGround);
             if (forwardLimit && reverseLimit) {
                 shiftedState = ShiftedStates.LOW;
-                System.out
-                        .println("Error: High and low sensor are triggered at the same time on module " + moduleNumber);
+                System.out.println("Error: High and low sensor are triggered at the same time on module " + moduleNumber);
             } else if (forwardLimit) {
                 shiftedState = ShiftedStates.HIGH;
             } else if (reverseLimit) {
@@ -276,19 +278,21 @@ public class SwerveModule {
                 azimuthEncoder.setZeroOffset(azimuthEncoder.getPosition());
             }
         } else {
-            /* PID tuning code */
-            double kp = Dashboard.freeTuningkP.get();
-            double ki = Dashboard.freeTuningkI.get();
-            double kd = Dashboard.freeTuningkD.get();
-            if ((kp0 != kp) || (ki0 != ki) || (kd0 != kd)) {
-                azimuthPIDConfigs.kP = kp;
-                azimuthPIDConfigs.kI = ki;
-                azimuthPIDConfigs.kD = kd;
-                this.azimuthTalon.getConfigurator().apply(azimuthPIDConfigs);
-                kp0 = kp;
-            }
+            /* PID tuning code START */
+            // double kp = Dashboard.freeTuningkP.get();
+            // double ki = Dashboard.freeTuningkI.get();
+            // double kd = Dashboard.freeTuningkD.get();
+            // if ((kp0 != kp) || (ki0 != ki) || (kd0 != kd)) {
+            //     azimuthPIDConfigs.kP = kp;
+            //     azimuthPIDConfigs.kI = ki;
+            //     azimuthPIDConfigs.kD = kd;
+            //     this.azimuthTalon.getConfigurator().apply(azimuthPIDConfigs);
+            //     kp0 = kp;
+            // }
+            /* PID tuning code END */
 
             if (Dashboard.calibrateWheels.get()) {
+                System.out.println("homing wheels");
                 azimuthTalon.setPosition(0.0);
             }
 

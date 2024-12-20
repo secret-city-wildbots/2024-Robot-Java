@@ -36,7 +36,7 @@ public class Robot extends TimedRobot {
   private final XboxController driverController = new XboxController(0);
   private final XboxController manipController = new XboxController(1);
   private final Intake intake = new Intake(0.5, 0.5, 0.2);
-  private final Shooter shooter = new Shooter(0, 0.576); // Normal power is 0.7
+  private final Shooter shooter = new Shooter(0.7, 0.576); // Normal power is 0.7
   private final Elevator elevator = new Elevator();
   private final Compressor compressor = new Compressor(2, PneumaticsModuleType.REVPH);
   private final LED led = new LED();
@@ -47,7 +47,7 @@ public class Robot extends TimedRobot {
   @SuppressWarnings("unused")
   private final Dashboard dashboard = new Dashboard();
 
-  private final String[] actuatorNames = { "No_Test", "Drive_0_(p)", "Drive_1_(p)", "Drive_2_(p)", "Drive_3_(p)",
+  private final String[] actuatorNames = { "No_Test", "Compressor_(p)", "Drive_0_(p)", "Drive_1_(p)", "Drive_2_(p)", "Drive_3_(p)",
       "Azimuth_0_(p)", "Azimuth_1_(p)", "Azimuth_2_(p)", "Azimuth_3_(p)", "Swerve_0_Shifter_(b)",
       "Swerve_1_Shifter_(b)",
       "Swerve_2_Shifter_(b)", "Swerve_3_Shifter_(b)", "Elevator_(p)", "Center_Intake_(p)",

@@ -114,8 +114,8 @@ public class Drivetrain {
         actualWheelDiameter_m = Units.inchesToMeters(4.78);
         maxGroundSpeed_mPs = Units.feetToMeters(17.8 * (actualWheelDiameter_m / nominalWheelDiameter_m));
         maxLowGearSpeed_mPs = Units.feetToMeters(8.3 * (actualWheelDiameter_m / nominalWheelDiameter_m));
-        maxRotateSpeed_radPs = Units.degreesToRadians(360 * (12 * maxGroundSpeed_mPs)
-            / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength_m / 2, 2) + Math.pow(Robot.robotWidth_m / 2, 2)))));
+        maxRotateSpeed_radPs = maxGroundSpeed_mPs
+            / ((Math.sqrt(Math.pow(Robot.robotLength_m / 2, 2) + Math.pow(Robot.robotWidth_m / 2, 2))));
         driveHighGearRatio = 6.42;
         driveLowGearRatio = 14.12;
         azimuthGearRatio = 15.6;
@@ -125,8 +125,8 @@ public class Drivetrain {
         actualWheelDiameter_m = Units.inchesToMeters(4.78);
         maxGroundSpeed_mPs = Units.feetToMeters(17.8 * (actualWheelDiameter_m / nominalWheelDiameter_m));
         maxLowGearSpeed_mPs = Units.feetToMeters(8.3 * (actualWheelDiameter_m / nominalWheelDiameter_m));
-        maxRotateSpeed_radPs = Units.degreesToRadians(360 * (12 * maxGroundSpeed_mPs)
-            / (2 * Math.PI * (Math.sqrt(Math.pow(Robot.robotLength_m / 2, 2) + Math.pow(Robot.robotWidth_m / 2, 2)))));
+        maxRotateSpeed_radPs = maxGroundSpeed_mPs
+            / ((Math.sqrt(Math.pow(Robot.robotLength_m / 2, 2) + Math.pow(Robot.robotWidth_m / 2, 2))));
         driveHighGearRatio = 6.42;
         driveLowGearRatio = 14.12;
         azimuthGearRatio = 15.6;
@@ -187,9 +187,9 @@ public class Drivetrain {
    * 
    * @param driverController
    * @param isAutonomous
-   * @param period           How long it has been since the last loop cycle
+   * @param period_ms           How long it has been since the last loop cycle
    */
-  public void drive(XboxController driverController, boolean isAutonomous, double period) {
+  public void drive(XboxController driverController, boolean isAutonomous, double period_ms) {
 
     // Adjust strafe outputs
     double[] strafeOutputs = SwerveUtils.swerveScaleStrafe(driverController, isAutonomous);
@@ -214,7 +214,7 @@ public class Drivetrain {
     moduleStateOutputs = kinematics.toSwerveModuleStates(
         ChassisSpeeds.discretize(ChassisSpeeds.fromFieldRelativeSpeeds(
             orientedStrafe[0] * maxGroundSpeed_mPs, orientedStrafe[1] * maxGroundSpeed_mPs, assistedRotation * maxRotateSpeed_radPs,
-            pigeon.getRotation2d()), period));
+            pigeon.getRotation2d()), 0.001 * period_ms));
     SwerveDriveKinematics.desaturateWheelSpeeds(moduleStateOutputs, maxGroundSpeed_mPs);
 
     double[] loggingState = new double[] {
