@@ -13,6 +13,11 @@ import frc.robot.Utility.SwerveUtils;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.util.Units;
 
+// WPI Command Libraries
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
+
+
 public class Robot extends TimedRobot {
 
   private final String codeVersion = "2024-Robot-Java 1.0_dev";
